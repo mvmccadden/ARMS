@@ -1,0 +1,66 @@
+Info
+{
+  raycount = 80
+  maxchecks = 8
+  conesize = 20
+  direction = 180
+}
+Source
+{
+  Position
+  {
+    Vec2 = 300, 200
+  }
+  Size
+  {
+    Vec2 = 20, 20
+  }
+}
+Listener
+{
+  Pattern = Omni
+  Position
+  {
+    Vec2 = 20, 440
+  }
+  Size
+  {
+    Vec2 = 10, 10
+  }
+}
+Barrier
+{
+  Type = Wood
+  Position
+  {
+    Vec2 = 100, 10
+  }
+  Size
+  {
+    Vec2 = 10, 100
+  }
+}
+Barrier
+{
+  Type = Wood
+  Position
+  {
+    Vec2 = 400, 300
+  }
+  Size
+  {
+    Vec2 = 20, 80
+  }
+}
+Barrier
+{
+  Type = Rubber
+  Position
+  {
+    Vec2 = 200, 400
+  }
+  Size
+  {
+    Vec2 = 10, 80
+  }
+}

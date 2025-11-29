@@ -1,0 +1,475 @@
+/*!
+ *  \author Manoel McCadden
+ *  \date   11-27-25
+ *  \file   generator.h
+ *
+ *  \brief
+ *    Implementation file for generating and calculating data
+ */
+
+#include "generator.h"
+
+#include <cmath>
+#include <string>
+
+#include "source.h"
+#include "listener2.h"
+#include "barrier.h"
+
+#include "audioray.h"
+
+#include "arms_math.h"
+#include "helper.h"
+
+using namespace std;
+
+array<Vec2, 2> get_object_data(DataMap::DataMapIterator it)
+{
+  array<Vec2, 2> objData = {Vec2{0.f, 0.f}, Vec2{0.f, 0.f}};
+
+  for(DataMap::DataMapIterator childIt = (*it)->get_children_begin()
+        ; childIt != (*it)->get_children_end(); ++childIt)
+  {
+    if((*childIt)->get_name() == "Position")
+    {
+      objData[0] = *(*childIt)->get_casted_data<Vec2>();
+    }
+    else if((*childIt)->get_name() == "Size")
+    {
+      objData[1] = *(*childIt)->get_casted_data<Vec2>();
+    }
+  }
+
+  return objData;
+}
+
+vector<Object *> convert_DataMap_to_Object(DataMap *dataMap
+    , const Vec2 &posOffset, RayGenerationInfo &info)
+{
+  vector<Object *> objVec;
+
+  if(dataMap->get_name() != "root")
+  {
+    return objVec;
+  }
+  
+  for(DataMap::DataMapIterator it = dataMap->get_children_begin()
+      ; it != dataMap->get_children_end(); ++it)
+  {
+    if((*it)->get_name() == "Info")
+    {
+      info = *(*it)->get_casted_data<RayGenerationInfo>();
+    }
+    else if((*it)->get_name() == "Source")
+    {
+      array<Vec2, 2> objData = get_object_data(it);
+
+      objVec.push_back(new Source(objData[0] + posOffset, objData[1]));
+    }
+    else if((*it)->get_name() == "Listener")
+    {
+      array<Vec2, 2> objData = get_object_data(it);
+      string *pattern = (*it)->get_casted_data<string>();
+
+      objVec.push_back(new Listener(objData[0] + posOffset, objData[1]
+            , *pattern));
+    }
+    else if((*it)->get_name() == "Barrier")
+    {
+      string type = *(*it)->get_casted_data<string>();
+      array<Vec2, 2> objData = get_object_data(it);
+
+      objVec.push_back(new Barrier(objData[0] + posOffset, objData[1], type));
+    }
+  }
+
+  return objVec;
+}
+
+Vec2 get_object_center(Object *obj)
+{
+  Vec2 position = obj->get_position();
+  Vec2 size = obj->get_size();
+  return position + size / 2.f;
+}
+
+/*!
+ *  Detect if a collision occured on the calculated trajectory of the line.
+ *
+ *  TODO: Have a cone for the listener for collision detection
+ *  in parallel maybe move the cone for src to the source object
+ *  
+ *  \param objVec
+ *    A vector of all objects in the scene
+ *  \param rayBegin
+ *    A position of where the ray begins
+ *  \param rayEnd
+ *    A reference to the end position of the ray which will be updated to
+ *    represent the collision point if a collision occurs
+ *  
+ *  \returns
+ *    Returns a struct of collision info
+ */
+const CollisionInfo detect_collisions(vector<Object *> &objVec
+    , AudioRay *ray)
+{
+  CollisionInfo info;
+  float intersectionDistance = -1.f;
+  Vec2 rayBegin = ray->get_posA();
+  Vec2 rayEnd = ray->get_posB();
+  Vec2 newRayEnd(0.f, 0.f);
+
+  for(Object *obj : objVec)
+  {
+    // NOTE: Currently ignoring source for collisions as rays start in middle of
+    // source box, SOON NULL_LINES WILL BE USED MAYBE
+    if(obj->get_type_name() == "Source")
+    {
+      continue;
+    }
+
+    Vec2 objPos = obj->get_position();
+    Vec2 objSize = obj->get_size();
+    std::array<Vec2, 4> objLines = 
+    {
+      Vec2{obj->get_position()},
+      Vec2{objPos.x + objSize.x, objPos.y},
+      Vec2{objPos.x + objSize.x, objPos.y + objSize.y},
+      Vec2{objPos.x, objPos.y + objSize.y}
+    };
+    
+    // Line-Line collision done for each wall of the barrier
+    for(int i = 0; i < 4; ++i)
+    {
+      // DO NOT CHECK PARENT AT REFLECTION LINE AS THIS WILL 
+      // CAUSE COLLISION ERRORS
+      if(ray->get_parent() == obj && ray->get_parent_line() == i)
+      {
+        continue;
+      }
+
+      int nextPoint = (i + 1) % 4;
+      float denominator = 
+        (
+          (objLines[nextPoint].y - objLines[i].y) * (rayEnd.x - rayBegin.x) 
+          - (objLines[nextPoint].x - objLines[i].x) * (rayEnd.y - rayBegin.y)
+        );
+      
+      // Ignore parallel lines
+      if(denominator == 0)
+      {
+        continue;
+      }
+
+      // Normalized points of intersection
+      float uA = 
+        (
+          (objLines[nextPoint].x - objLines[i].x) * (rayBegin.y - objLines[i].y) 
+          - (objLines[nextPoint].y - objLines[i].y) * (rayBegin.x - objLines[i].x)
+        ) / denominator;
+      float uB = 
+        (
+          (rayEnd.x - rayBegin.x) * (rayBegin.y - objLines[i].y) 
+          - (rayEnd.y - rayBegin.y) * (rayBegin.x - objLines[i].x)
+        ) / denominator;
+
+      if(uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1)
+      {
+        // Calculate intersection
+        Vec2 intersectionPos = rayBegin + ((rayEnd - rayBegin) * uA);
+        float distance = (intersectionPos - rayBegin).magnitude();
+
+        // Only update if closer intersection
+        if(intersectionDistance > 0 && distance >= intersectionDistance)
+        {
+          continue;
+        }
+      
+        intersectionDistance = distance;
+        newRayEnd = intersectionPos;
+        info.collision = true;
+        info.parent = obj;
+        info.parentLine = i;
+        info.lineBegin = objLines[i];
+        info.lineEnd = objLines[nextPoint];
+
+      }
+    }
+
+    // Check if parent exists and then check if a listener.
+    // If it is exit (THIS IS WHAT WE ARE WAITING FOR!!!)
+    if(info.parent && info.parent->get_type_name() == "Listener")
+    {
+      static_cast<void>(Logger(Logger::L_MSG, "Listener Hit!"));
+      break;
+    }
+  }
+
+  if(!info.collision)
+  {
+    return info;
+  }
+
+  // Log Collision
+  string collisionMsg = "Collision detected at: ( "
+    + std::to_string(newRayEnd.x) + " , "
+    + std::to_string(newRayEnd.y) + " )";
+  //static_cast<void>(Logger(Logger::L_MSG, collisionMsg));
+  
+  ray->set_posB(newRayEnd);
+  return info;
+}
+
+AudioRay *resolve_collision(AudioRay *ray, const CollisionInfo &info
+    , const float &distance)
+{
+  Vec2 posA = ray->get_posA();
+  Vec2 posB = ray->get_posB();
+  float amp = ray->get_amp() * info.parent->get_resistance_coefficent();
+
+  Vec2 incidentVec = posB - posA;
+  Vec2 lineDirection = info.lineEnd - info.lineBegin;
+  Vec2 normalVec(-lineDirection.y, lineDirection.x);
+  normalVec.normalize();
+
+  Vec2 reflectedVec = incidentVec 
+    - normalVec * 2.f * incidentVec.dot(normalVec);
+  reflectedVec.normalize();
+  Vec2 posC = posB + reflectedVec * distance;
+
+  return new AudioRay(info.parent, info.parentLine, amp, posB, posC);
+}
+
+vector<vector<AudioRay *>> generate_inital_audio_rays(Object *parent
+    , const Vec2 &srcPos, const float &rayDistance
+    , const RayGenerationInfo &info)
+{
+  const float AR_TWOPI = static_cast<float>(8.0 * atan(1));
+  // Convert values from degrees to radians
+  const float coneSize = static_cast<float>(info.coneSize) / 360.f * AR_TWOPI;
+  const float direction = static_cast<float>(info.direction) / 360.f * AR_TWOPI;
+  const float degreeIncrement = coneSize / static_cast<float>(info.rayCount);
+
+  vector<vector<AudioRay *>> returnVec;
+
+  float currentDegree = direction - coneSize / 2.f;
+  for(int i = 0; i < info.rayCount; ++i)
+  {
+    Vec2 endPos = {rayDistance * cos(currentDegree)
+      , rayDistance * sin(currentDegree)};
+    currentDegree += degreeIncrement;
+    vector<AudioRay *> newVec;
+    newVec.push_back(new AudioRay(parent, NULL_LINES, DEFAULT_AMP, srcPos
+          , endPos));
+    returnVec.push_back(newVec);
+  }
+
+  return returnVec;
+}
+
+/*!
+ *  Calculates the T60 time (time for sound to decay by 60dB).
+ *
+ *  A = Surface Area of Absorbtion Objects * Absorbtion Coefficents
+ *  V = Volume of the room
+ *
+ *  T60 = ((0.161) * V) / A
+ *
+ *  NOTE: As we are doing a 2D model 
+ *  we are considering the Z-axis to always be 1
+ *
+ *  \param objVec
+ *    A vector of objects with absorbtion factor
+ *
+ *  \returns
+ *    The T60 time in seconds
+ */
+float calculate_t60_time(vector<Object *> &objVec)
+{
+  float absorbtionAverage = 0.f;
+  float absorbtionSurfaceArea = 0.f;
+  float roomVolume = 0.f;
+
+  for(Object *obj : objVec)
+  {
+    absorbtionAverage += obj->get_resistance_coefficent();
+
+    Vec2 size = obj->get_size();
+    if(obj->get_type_name() == "Barrier")
+    {
+      Barrier *barrier = dynamic_cast<Barrier *>(obj);
+      if(barrier && barrier->get_type_data() == "wall")
+      {
+        roomVolume = size.w * size.h;
+      }
+
+      absorbtionSurfaceArea += size.w * 2.f;
+      absorbtionSurfaceArea += size.h * 2.f;
+    }
+  }
+
+  static_cast<void>(Logger(Logger::L_MSG, "Absorbtion Average: " 
+      + to_string(absorbtionAverage)));
+  static_cast<void>(Logger(Logger::L_MSG, "Absorbtion Surface Area: " 
+      + to_string(absorbtionSurfaceArea)));
+  static_cast<void>(Logger(Logger::L_MSG, "Room Volume: " 
+      + to_string(roomVolume)));
+  return (0.161f * roomVolume) / (absorbtionSurfaceArea * absorbtionAverage);
+}
+
+float calculate_listener_attenuation(vector<vector<AudioRay *>> &raySet)
+{
+  float attenuation = 0.f;
+
+  for(vector<AudioRay *> &rays : raySet)
+  {
+    attenuation += rays.back()->get_amp();
+  }
+
+  return attenuation;
+}
+
+vector<vector<AudioRay *>> generate_audio_rays_from_scene(
+    const RayGenerationInfo &generationInfo, vector<Object *> &objVec
+    , const Vec2 &relativePos, const Vec2 &relativeSize)
+{
+  // Set defaults and get the source object
+  Object *parent;
+  Vec2 srcPos = {0.f, 0.f};
+  vector<vector<AudioRay *>> rayVec;
+  vector<vector<AudioRay *>> returnVec;
+
+  for(Object *obj : objVec)
+  {
+    if(obj->get_type_name() == "Source")
+    {
+      parent = obj;
+      srcPos = get_object_center(obj);
+      break;
+    }
+  }
+
+  // Add a wall for collision detection
+  Barrier wall(relativePos, relativeSize, "wall");
+  objVec.push_back(&wall);
+
+  // Generate the inital waves in the TODO: given cone
+  rayVec = generate_inital_audio_rays(parent, srcPos, 1000.f, generationInfo);
+
+  float listenerAmp = 0.f;
+
+  // Generate subsequent rays based off collisions
+  for(vector<AudioRay *> _rayVec : rayVec)
+  {
+    // First check for the inital collision
+    AudioRay *ray = _rayVec.front();
+    float amp = map_range_to(ray->get_amp(), 0.f, 1.f, 60.f, 160.f);
+    ray->set_color(sf::Color(0.f, amp, 0.f, amp));
+    CollisionInfo collisionInfo = detect_collisions(objVec, ray); 
+    // Then loop until either the collision max is hit meaning we probably 
+    // can't hit the listener or we hit the listener
+    for(int i = 0; i < generationInfo.maxChecks && collisionInfo.collision
+        && (collisionInfo.parent 
+          && !(collisionInfo.parent->get_type_name() == "Listener")); ++i)
+    {
+      AudioRay *newRay = resolve_collision(ray, collisionInfo, 1000.f);
+      amp = map_range_to(newRay->get_amp(), 0.f, 1.f, 60.f, 160.f);
+      newRay->set_color(sf::Color(0.f, amp, 0.f, amp));
+      ray = newRay;
+      _rayVec.push_back(ray);
+      collisionInfo= detect_collisions(objVec, ray);
+    }
+
+    // TODO: Instead of adding to a new vec on successful hit lets remove from
+    // vec
+    if(collisionInfo.parent && collisionInfo.parent->get_type_name() == "Listener")
+    {
+      returnVec.push_back(_rayVec);
+    }
+    else 
+    {
+      for(AudioRay * _ray : _rayVec)
+      {
+        delete _ray;
+      }
+    }
+  }
+
+  // Get smallest vec size and set color to be bolded
+  struct SmallestVecSize
+  {
+    int index;
+    int size;
+  } smallestVecSize {0, generationInfo.maxChecks};
+  int totalSizes = 0.f;
+
+  // Get the louded ray
+  struct LoudestRay
+  {
+    int index;
+    float amp;
+  } loudestRay {0, 0.f};
+
+  for(int i = 0; i < returnVec.size(); ++i)
+  {
+    totalSizes += returnVec[i].size();
+    if(returnVec[i].size() < smallestVecSize.size)
+    {
+      smallestVecSize.index = i;
+      smallestVecSize.size = returnVec[i].size();
+    }
+    float amp = returnVec[i].back()->get_amp();
+    if(loudestRay.amp < amp)
+    {
+      loudestRay.amp = amp;
+      loudestRay.index = i;
+    }
+  }
+
+  // Loudest and Smallest Ray
+  // NOTE: Accounting for case of no rays found and scene being 'invalid'
+  if(loudestRay.index == smallestVecSize.index && returnVec.size() > 0)
+  {
+    for(AudioRay *ray : returnVec[loudestRay.index])
+    {
+      float amp = map_range_to(ray->get_amp(), 0.f, 1.f, 130.f, 230.f);
+      ray->set_color(sf::Color(amp, 0.f, amp, amp)); 
+    }
+  }
+  else if(returnVec.size() > 0)
+  {
+    // Loudest Ray
+    for(AudioRay *ray : returnVec[loudestRay.index])
+    {
+      float amp = map_range_to(ray->get_amp(), 0.f, 1.f, 130.f, 230.f);
+      ray->set_color(sf::Color(amp, amp, 0.f, amp)); 
+    }
+  
+    // Smallest Ray
+    for(AudioRay *ray : returnVec[smallestVecSize.index])
+    {
+      float amp = map_range_to(ray->get_amp(), 0.f, 1.f, 130.f, 230.f);
+      ray->set_color(sf::Color(0.f, amp, amp, amp)); 
+    }
+  }
+
+  // Find the average size for logging purposes
+  float averageSize = static_cast<float>(totalSizes) 
+    / static_cast<float>(returnVec.size());
+
+  float t60Time = calculate_t60_time(objVec);
+
+  listenerAmp = calculate_listener_attenuation(returnVec);
+
+  static_cast<void>(Logger(Logger::L_MSG, "Calculate T60 time: " 
+      + to_string(t60Time)));
+  static_cast<void>(Logger(Logger::L_MSG, "Average size of the Audio Rays: " 
+      + to_string(averageSize)));
+  static_cast<void>(Logger(Logger::L_MSG, "Amplitude recieved at listener: " 
+      + to_string(listenerAmp)));
+
+  // Remove the added wall since we don't need to draw it
+  objVec.pop_back();
+
+  return returnVec;
+}
