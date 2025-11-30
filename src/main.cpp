@@ -36,7 +36,7 @@ int main()
   ui.push_back(new Object(scenePos, sceneSize));
   ui.back()->set_color(sf::Color(200, 200, 200));
 
-  Scene scene("testscene1", scenePos, sceneSize);
+  Scene scene(scenePos, sceneSize);
 
   // TEST: INPUT OUTPUT FOR WAVE
   //
@@ -48,13 +48,13 @@ int main()
 
 
   // TEST: Using pluck to test wave manipulation in scene
-  WaveFile wave("pluck");
+  WaveFile wave;
 
   ui.push_back(new Button("Select Scene", {610.f, 20.f}, {100.f, 20.f}
         , [&scene] 
         {
           nfdchar_t *outPath = NULL;
-          nfdresult_t result = NFD_OpenDialog(NULL, INPUT_DIR, &outPath);
+          nfdresult_t result = NFD_OpenDialog("txt", INPUT_DIR, &outPath);
 
           if(result == NFD_OKAY)
           {
@@ -66,13 +66,13 @@ int main()
             Logger(Logger::L_MSG, "Error occured in wave file section");
           }
 
-          free(outPath);
+          if(outPath) free(outPath);
         }));
   ui.push_back(new Button("Select Wave", {610.f, 100.f}, {100.f, 20.f}
         , [&wave] 
         {
           nfdchar_t *outPath = NULL;
-          nfdresult_t result = NFD_OpenDialog(NULL, INPUT_DIR, &outPath);
+          nfdresult_t result = NFD_OpenDialog("wav", INPUT_DIR, &outPath);
 
           if(result == NFD_OKAY)
           {
@@ -84,13 +84,40 @@ int main()
             Logger(Logger::L_MSG, "Error occured in wave file section");
           }
 
-          free(outPath);
+          if(outPath) free(outPath);
         }));
   ui.push_back(new Button("Generate Output", {610.f, 140.f}, {100.f, 20.f}
         , [&scene, &wave] 
         {
-          scene.apply_filter_to_wave(wave);
-          wave.output_to_file(wave.get_name() + "_out");
+          if(!scene.is_open())
+          {
+            static_cast<void>(Logger(Logger::L_WRN
+                  , "No valid Scene selected"));
+            return;
+          }
+          if(!wave.is_open())
+          {
+            static_cast<void>(Logger(Logger::L_WRN
+                  , "No valid Wav file selected"));
+            return;
+          }
+
+          nfdchar_t *outPath = NULL;
+          nfdresult_t result = NFD_SaveDialog("wav", OUTPUT_DIR, &outPath);
+
+          if(result == NFD_OKAY)
+          {
+            static_cast<void>(Logger(Logger::L_MSG
+                  , "User selected new Wave file"));
+            scene.apply_filter_to_wave(wave);
+            wave.output_to_file(outPath);
+          }
+          else if(result != NFD_CANCEL)
+          {
+            Logger(Logger::L_MSG, "Error occured in wave file section");
+          }
+
+          if(outPath) free(outPath);
         }));
   
   while (window.isOpen())

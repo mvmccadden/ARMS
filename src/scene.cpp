@@ -21,6 +21,9 @@
 
 using namespace std;
 
+Scene::Scene(const Vec2 &topLeftPos, const Vec2 &size)
+  : relativePos(topLeftPos), relativeSize(size), filter(nullptr) { }
+
 Scene::Scene(const string &fileName, const Vec2 &topLeftPos, const Vec2 &size
     , const bool &ignoreInputDir)
   : relativePos(topLeftPos), relativeSize(size), currentSamplingRate(0u)
@@ -32,6 +35,11 @@ Scene::Scene(const string &fileName, const Vec2 &topLeftPos, const Vec2 &size
 Scene::~Scene() 
 {
   clear();
+}
+
+bool Scene::is_open() const
+{
+  return open;
 }
 
 void Scene::open_scene(const string &fileName, const bool &ignoreInputDir)
@@ -72,6 +80,8 @@ void Scene::open_scene(const string &fileName, const bool &ignoreInputDir)
   objects = convert_DataMap_to_Object(dataMap, relativePos, info);
   audioRayVec = generate_audio_rays_from_scene(info, objects
       , relativePos, relativeSize);
+
+  open = true;
 }
 
 void Scene::apply_filter_to_wave(WaveFile &wave)
@@ -138,7 +148,7 @@ string Scene::get_name() const
 
 void Scene::clear()
 {
-  delete filter;
+  if(filter) delete filter;
 
   for(vector<AudioRay *> audioRays : audioRayVec) 
     for(AudioRay *audioRay : audioRays) 

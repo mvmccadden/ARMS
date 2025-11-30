@@ -107,12 +107,15 @@ struct SAMPLES
 class WaveFile
 {
   public:
+    WaveFile();
     WaveFile(const std::string &fileName);
     ~WaveFile();
  
     void open_file(const std::string &fileName
         , const bool &ignoreInputDir = false);
     void output_to_file(const std::string &fileName);
+
+    bool is_open() const;
 
     std::string get_name() const;
 
@@ -122,6 +125,8 @@ class WaveFile
     
     void convert_from_pcm_values(char *values);
     char *convert_to_pcm_values();
+
+    bool open = false;
 
     std::string name;
 

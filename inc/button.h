@@ -63,6 +63,8 @@ class Button : public Object
 
     inline static sf::Font font;
 
+    inline static const size_t textSize = 12;
+
     inline static const sf::Color defaultColor = sf::Color(200, 200, 200);
     inline static const sf::Color hoveredColor = sf::Color(100, 100, 100);
     inline static const sf::Color clickedColor = sf::Color(100, 100, 100);

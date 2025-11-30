@@ -1,6 +1,7 @@
 build
 out
 output/*
+TODO.md
 .cache
 .idea
 .vs

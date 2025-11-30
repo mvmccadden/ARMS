@@ -87,24 +87,14 @@ void Button::set_font(const string &fontPath)
 
 void Button::resize_button()
 {
-  sf::FloatRect textBounds = buttonText.getLocalBounds();
-
-  size_t numOfChars = buttonText.getString().getSize();
-  unsigned textSize = size.x / textBounds.size.x 
-    * buttonText.getCharacterSize();
-  if(textSize > size.y - 8.f)
-  {
-    textSize = size.y - 8.f;
-  }
-
   buttonText.setCharacterSize(textSize);
-  textBounds = buttonText.getLocalBounds();
 
+  sf::FloatRect textBounds = buttonText.getLocalBounds();
   Vec2 sizeDiff = {((size.x - textBounds.size.x) / 2.f)
     , (size.y - textSize) / 2.f};
 
-  Logger(Logger::L_MSG, "TEXT: " + buttonText.getString() + ", with size: "
-    + to_string(numOfChars));
+  static_cast<void>(Logger(Logger::L_MSG, "TEXT: " + buttonText.getString() 
+        + ", with size: " + to_string(textSize)));
 
   buttonText.setPosition({position.x + sizeDiff.x, position.y + sizeDiff.y});
 }

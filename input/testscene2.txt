@@ -42,7 +42,7 @@ Barrier
 }
 Barrier
 {
-  Type = Wood
+  Type = Rubber
   Position
   {
     Vec2 = 400, 300

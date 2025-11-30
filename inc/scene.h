@@ -26,12 +26,15 @@ using ObjectVec = std::vector<Object *>;
 class Scene
 {
   public:
+    Scene(const Vec2 &topLeftPos, const Vec2 &size);
     Scene(const std::string &fileName, const Vec2 &topLeftPos
         , const Vec2 &size, const bool &ignoreInputDir = false);
     ~Scene();
 
     void open_scene(const std::string &fileName
         , const bool &ignoreInputDir = false);
+
+    bool is_open() const;
 
     void apply_filter_to_wave(WaveFile &wave);
 
@@ -41,6 +44,8 @@ class Scene
   private:
     void generate_scene_filter();
     void clear();
+
+    bool open = false;
 
     Vec2 relativePos;
     Vec2 relativeSize;

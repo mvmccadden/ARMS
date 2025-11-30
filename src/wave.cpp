@@ -161,12 +161,19 @@ void SAMPLES::clear()
 //  WaveFile 
 //==============================================================================
 
+WaveFile::WaveFile() { }
+
 WaveFile::WaveFile(const string &fileName)
 {
   open_file(fileName);
 }
 
 WaveFile::~WaveFile() { }
+
+bool WaveFile::is_open() const
+{
+  return open;
+}
 
 void WaveFile::open_file(const string &fileName, const bool &ignoreInputDir)
 {
@@ -199,7 +206,7 @@ void WaveFile::open_file(const string &fileName, const bool &ignoreInputDir)
   if(!file)
   {
     static_cast<void>(Logger(Logger::L_ERR
-          , "Failed to access given wave file" ));
+          , "Failed to access given Wav file" ));
     return;
   }
 
@@ -228,21 +235,27 @@ void WaveFile::open_file(const string &fileName, const bool &ignoreInputDir)
   file.read(values, header.dataSize);
 
   convert_from_pcm_values(values);
+  open = true;
 
   delete []values;
 
   file.close();
-
 }
 
 void WaveFile::output_to_file(const string &fileName)
 {
-  ofstream file(OUTPUT_DIR + fileName + ".wav");
+  if(!open)
+  {
+    static_cast<void>(Logger(Logger::L_ERR
+          , "Cannot output when no Wav file is selected" ));
+  }
+
+  ofstream file(fileName + ".wav");
 
   if(!file)
   {
     static_cast<void>(Logger(Logger::L_ERR
-          , "Failed to create given wave file" ));
+          , "Failed to create given Wav file" ));
     return;
   }
 

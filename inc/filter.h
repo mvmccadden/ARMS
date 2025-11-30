@@ -29,3 +29,14 @@ class Filter
   private:
   std::vector<COEFFICENT> coefficents;
 };
+
+class LowPass : public Filter
+{
+  public:
+    LowPass(const float &cutoff);
+    ~LowPass();
+
+  private:
+    float coefficent;
+    float prevOutput;
+};
