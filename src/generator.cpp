@@ -396,12 +396,18 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
       newRay->set_color(sf::Color(0.f, amp, 0.f, amp));
       ray = newRay;
       _rayVec.push_back(ray);
-      collisionInfo= detect_collisions(objVec, ray);
+      collisionInfo = detect_collisions(objVec, ray);
+    }
+
+    if(_rayVec.back()->get_amp() < 0.f || _rayVec.back()->get_amp() > 1.f)
+    {
+      Logger(Logger::L_ERR, "INVALID VEC AMP");
     }
 
     // TODO: Instead of adding to a new vec on successful hit lets remove from
     // vec
-    if(collisionInfo.parent && collisionInfo.parent->get_type_name() == "Listener")
+    if(collisionInfo.parent && _rayVec.back()->get_amp() > 0.f
+        && collisionInfo.parent->get_type_name() == "Listener")
     {
       returnVec.push_back(_rayVec);
     }

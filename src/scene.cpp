@@ -90,7 +90,7 @@ void Scene::open_scene(const string &fileName, const bool &ignoreInputDir)
 void Scene::apply_filter_to_wave(WaveFile &wave)
 {
   unsigned incomingSamplingRate = wave.get_sampling_rate();
-  if(currentSamplingRate != incomingSamplingRate)
+  if(!filter || currentSamplingRate != incomingSamplingRate)
   {
     if(filter)
     {
@@ -232,7 +232,7 @@ void Scene::generate_scene_filter()
   {
     float distance = 0.f;
     // NOTE: each pixel is assumed to be a centimeter in this simulation atm
-    for(AudioRay * audioRay : audioRays)
+    for(AudioRay *audioRay : audioRays)
     { 
       distance += audioRay->get_distance();
     }
@@ -254,12 +254,21 @@ string Scene::get_name() const
 
 void Scene::clear()
 {
-  if(filter) delete filter;
+  if(filter) 
+  {
+    delete filter;
+    currentSamplingRate = 0;
+    filter = nullptr;
+  }
 
   for(vector<AudioRay *> audioRays : audioRayVec) 
     for(AudioRay *audioRay : audioRays) 
       if (audioRay) delete audioRay;
 
+  audioRayVec.clear();
+
   for(Object *object : objects) 
     if(object) delete object;
+
+  objects.clear();
 }

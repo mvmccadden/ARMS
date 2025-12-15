@@ -1,6 +1,7 @@
 build
 out
 output/*
+testing
 TODO.md
 .cache
 .idea

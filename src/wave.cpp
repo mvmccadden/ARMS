@@ -96,8 +96,20 @@ char *WAVE_HEADER::generate_wave_header()
   return headerData;
 }
 
-void WAVE_HEADER::read_wave_header()
+void WAVE_HEADER::read_wave_header(std::fstream &file)
 {
+  file.read(headerData, 44);
+
+  // Using strncmp as the char arrays arn't 0 terminated so they will read the
+  // next value in struct causing errors
+  if(strncmp(headerData + 8, "WAVE", 4) != 0 
+      || strncmp(headerData, "RIFF", 4) != 0)
+  {
+    static_cast<void>(Logger(Logger::L_ERR
+          , "Invalid wave file passed in for reading" ));
+    return;
+  }
+
   memcpy(riffLabel, headerData, sizeof(char) * 4);
   memcpy(&riffSize, headerData + 4, sizeof(uint32_t));
   memcpy(fileTag, headerData + 8, sizeof(char) * 4);
@@ -109,6 +121,18 @@ void WAVE_HEADER::read_wave_header()
   memcpy(&bytesPerSecond, headerData + 28, sizeof(uint32_t));
   memcpy(&bytesPerSample, headerData + 32, sizeof(uint16_t));
   memcpy(&bitsPerSample, headerData + 34, sizeof(uint16_t));
+
+  // Skip any non-data blocks
+  while(!file.eof() && strncmp(headerData + 36, "data", 4) != 0)
+  {
+    uint32_t size = static_cast<uint32_t>(*(headerData + 40)); 
+    char *skipper = new char[size];
+    file.read(skipper, size);
+    file.read(headerData + 36, 8);
+    delete []skipper;
+  }
+
+
   memcpy(dataLabel, headerData + 36, sizeof(char) * 4);
   memcpy(&dataSize, headerData + 40, sizeof(uint32_t));
 }
@@ -296,26 +320,7 @@ void WaveFile::open_file(const string &fileName, const bool &ignoreInputDir)
     return;
   }
 
-  file.read(header.headerData, 44);
-  header.read_wave_header();
-
-  // Using strncmp as the char arrays arn't 0 terminated so they will read the
-  // next value in struct causing errors
-  if(strncmp(header.fileTag, "WAVE", 4) != 0 
-      || strncmp(header.riffLabel, "RIFF", 4) != 0)
-  {
-    static_cast<void>(Logger(Logger::L_ERR
-          , "Invalid wave file passed in for reading" ));
-    return;
-  }
-
-  // TODO: Account for possible other chunk formats of wave files
-  if(strncmp(header.dataLabel, "data", 4) != 0)
-  {
-    static_cast<void>(Logger(Logger::L_ERR
-          , "Invalid wave file passed in, data not in expected location" ));
-    return;
-  }
+  header.read_wave_header(file);
 
   char *values = new char[header.dataSize];
   file.read(values, header.dataSize);

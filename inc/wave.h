@@ -111,7 +111,7 @@ struct WAVE_HEADER
    *  Reads in the data stored in the header data variable and saves it within
    *  the rest of the wave header struct for ease of access
    */
-  void read_wave_header();
+  void read_wave_header(std::fstream &file);
 };
 
 struct SAMPLES

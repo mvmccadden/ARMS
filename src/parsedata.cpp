@@ -161,7 +161,7 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
         else if(rhs && lineChar >= '0' && lineChar <= '9')
         {
           // 48 = 0
-          if(!decimal)
+          if(!decimalValue)
           {
             decimal *= 10.f;
             decimal += static_cast<int>(lineChar) - 48;
@@ -169,7 +169,8 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
           else
           {
             float value = static_cast<int>(lineChar) - 48;
-            for(int i = 0; i < ++decimalPlaces; ++i)
+            ++decimalPlaces;
+            for(int i = 0; i < decimalPlaces; ++i)
             {
               value *= 0.1f;
             }
@@ -177,15 +178,18 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
             decimal += value;
           }
         }
-        else if(rhs && lineChar == '.')
+        else if(rhs && lineChar == 46)
         {
           decimalValue = true;
+          Logger(Logger::L_MSG, "HIT" + to_string(decimal));
         }
       }
 
       Barrier::Coefficents *info 
         = dataMap->get_casted_data<Barrier::Coefficents>();
       info->coefficent = decimal;
+
+      Logger(Logger::L_MSG, "Custom coefficent value: " + to_string(decimal));
     }
     else if(line.find("Name =") != string::npos)
     {

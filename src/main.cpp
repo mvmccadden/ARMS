@@ -74,7 +74,7 @@ int main()
           if(result == NFD_OKAY)
           {
             static_cast<void>(Logger(Logger::L_MSG
-                  , "User selected new Wave file"));
+                  , "User selected new Scene file"));
 
             string filePath = outPath;
             size_t lastSlash = filePath.find_last_of("\\/") + 1;
@@ -85,7 +85,7 @@ int main()
 
             size_t dotPos = filePath.rfind('.');
             if(dotPos != string::npos)
-            {
+           {
               filePath = filePath.substr(0, dotPos);
             }
 
