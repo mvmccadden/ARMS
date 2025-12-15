@@ -14,7 +14,7 @@ Listener::Listener(const Vec2 &pos, const Vec2  &size
   : Object(pos, size, "Listener")
 {
   set_color(listenerColor);
-  resistanceCoefficent = 1.f;
+  absortionCoefficent = 0.f;
 
   patternInfo.pattern = _pattern;
 

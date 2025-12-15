@@ -39,7 +39,7 @@ class Object
 
     std::string get_type_name() const;
 
-    float get_resistance_coefficent() const;
+    float get_absortion_coefficent() const;
 
     void set_position(const Vec2 &pos);
     void set_size(const Vec2 &size);
@@ -49,7 +49,7 @@ class Object
     const Vec2 &get_size() const;
 
   protected:
-    float resistanceCoefficent;
+    float absortionCoefficent = 0.f;
     Vec2 position;
     Vec2 size;
 

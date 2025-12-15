@@ -11,6 +11,8 @@
 
 #include <fstream>
 
+#include "barrier.h"
+
 #include "arms_math.h"
 
 using namespace std;
@@ -41,6 +43,9 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
     cout << "Failed to access given text file" << endl;
     return nullptr;
   }
+
+  // Reset barrier custom settings to ensure they don't get filled
+  Barrier::reset_custom_coefficents();
     
   // Creating first node as root.
   DataMap *dataMap = new DataMap("root", nullptr);
@@ -73,6 +78,11 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
     {
       dataMap = dataMap->add_child(new DataMap("Size", dataMap));
     }
+    else if(line.find("Coefficent") != string::npos)
+    {
+      dataMap = dataMap->add_child(new DataMap("Coefficent", dataMap));
+      dataMap->set_data<Barrier::Coefficents>(new Barrier::Coefficents());
+    }
     else if(line.find("}") != string::npos)
     {
       dataMap = dataMap->get_parent();
@@ -104,6 +114,109 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
 
       dataMap->set_data<Vec2>(new Vec2(static_cast<float>(digits[0])
             , static_cast<float>(digits[1])));
+    }
+    else if(line.find("Color =") != string::npos)
+    {
+      array<uint8_t, 3> digits = {0};
+      int currentDigit = 0;
+      bool rhs = false;
+      for(char lineChar : line)
+      {
+        if(lineChar == '=')
+        {
+          rhs = true;
+        }
+
+        // Is a digit ascii char
+        else if(rhs && lineChar >= '0' && lineChar <= '9')
+        {
+          // 48 = 0
+          digits[currentDigit] *= 10;
+          digits[currentDigit] += static_cast<int>(lineChar) - 48;
+        }
+        else if(rhs && lineChar == ',')
+        {
+          ++currentDigit;
+        }
+      }
+
+      Barrier::Coefficents *info 
+        = dataMap->get_casted_data<Barrier::Coefficents>();
+      info->color = sf::Color{digits[0], digits[1], digits[2]};
+    }
+    else if(line.find("Factor =") != string::npos)
+    {
+      float decimal = 0.f;
+      int decimalPlaces = 0;
+      bool decimalValue = false;
+      bool rhs = false;
+      for(char lineChar : line)
+      {
+        if(lineChar == '=')
+        {
+          rhs = true;
+        }
+
+        // Is a digit ascii char
+        else if(rhs && lineChar >= '0' && lineChar <= '9')
+        {
+          // 48 = 0
+          if(!decimal)
+          {
+            decimal *= 10.f;
+            decimal += static_cast<int>(lineChar) - 48;
+          }
+          else
+          {
+            float value = static_cast<int>(lineChar) - 48;
+            for(int i = 0; i < ++decimalPlaces; ++i)
+            {
+              value *= 0.1f;
+            }
+            
+            decimal += value;
+          }
+        }
+        else if(rhs && lineChar == '.')
+        {
+          decimalValue = true;
+        }
+      }
+
+      Barrier::Coefficents *info 
+        = dataMap->get_casted_data<Barrier::Coefficents>();
+      info->coefficent = decimal;
+    }
+    else if(line.find("Name =") != string::npos)
+    {
+      string name;
+      bool rhs = false;
+      for(char lineChar : line)
+      {
+        if(lineChar == '=')
+        {
+          rhs = true;
+        }
+
+        if(!rhs || lineChar == ' ')
+        {
+          continue;
+        }
+
+        if(lineChar >= 65 && lineChar <= 90)
+        {
+          lineChar += 32;
+        }
+
+        if(lineChar >= 97 && lineChar <= 122)
+        {
+          name += lineChar;
+        }
+      }
+
+      Barrier::Coefficents *info 
+        = dataMap->get_casted_data<Barrier::Coefficents>();
+      info->name = name;
     }
     else if(line.find("Type =") != string::npos)
     {

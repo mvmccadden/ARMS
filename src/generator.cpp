@@ -43,6 +43,19 @@ array<Vec2, 2> get_object_data(DataMap::DataMapIterator it)
   return objData;
 }
 
+void create_custom_coefficents(DataMap::DataMapIterator it)
+{
+  for(DataMap::DataMapIterator childIt = (*it)->get_children_begin()
+        ; childIt != (*it)->get_children_end(); ++childIt)
+  {
+    if((*childIt)->get_name() == "Coefficent")
+    {
+      Barrier::set_custom_coefficent(Barrier::get_next_free_custom_coefficent()
+          , *(*childIt)->get_casted_data<Barrier::Coefficents>());
+    }
+  }
+}
+
 vector<Object *> convert_DataMap_to_Object(DataMap *dataMap
     , const Vec2 &posOffset, RayGenerationInfo &info)
 {
@@ -59,6 +72,7 @@ vector<Object *> convert_DataMap_to_Object(DataMap *dataMap
     if((*it)->get_name() == "Info")
     {
       info = *(*it)->get_casted_data<RayGenerationInfo>();
+      create_custom_coefficents(it);
     }
     else if((*it)->get_name() == "Source")
     {
@@ -225,7 +239,7 @@ AudioRay *resolve_collision(AudioRay *ray, const CollisionInfo &info
 {
   Vec2 posA = ray->get_posA();
   Vec2 posB = ray->get_posB();
-  float amp = ray->get_amp() * info.parent->get_resistance_coefficent();
+  float amp = ray->get_amp() * (1.f - info.parent->get_absortion_coefficent());
 
   Vec2 incidentVec = posB - posA;
   Vec2 lineDirection = info.lineEnd - info.lineBegin;
@@ -268,6 +282,11 @@ vector<vector<AudioRay *>> generate_inital_audio_rays(Object *parent
 }
 
 /*!
+ *  \depreacted 
+ *    This funciton is deporcated and now incorporated into 
+ *    the Scene class
+ *  
+ *
  *  Calculates the T60 time (time for sound to decay by 60dB).
  *
  *  A = Surface Area of Absorbtion Objects * Absorbtion Coefficents
@@ -292,13 +311,13 @@ float calculate_t60_time(vector<Object *> &objVec)
 
   for(Object *obj : objVec)
   {
-    absorbtionAverage += obj->get_resistance_coefficent();
+    absorbtionAverage += (1.f - obj->get_absortion_coefficent());
 
     Vec2 size = obj->get_size();
     if(obj->get_type_name() == "Barrier")
     {
       Barrier *barrier = dynamic_cast<Barrier *>(obj);
-      if(barrier && barrier->get_type_data() == "wall")
+      if(barrier && barrier->get_type_data() == Barrier::C_WALL)
       {
         roomVolume = size.w * size.h;
       }

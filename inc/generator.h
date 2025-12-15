@@ -7,6 +7,8 @@
  *    Implementation file for generating and calculating data
  */
 
+#pragma once
+
 #include "parsedata.h"
 #include "arms_math.h"
 

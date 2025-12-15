@@ -8,18 +8,21 @@
  */
 
 #include "button.h"
-#include "helper.h"
+
+#include <string>
+
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Mouse.hpp>
-#include <string>
+
+#include "helper.h"
 
 using namespace std;
 
 Button::Button(const std::string &title, const Vec2 &_pos
     , const Vec2 &_size, BUTTON_ACTION action_func)
   : Object(_pos, _size, "Button"), buttonState(BS_DEFAULT)
-    , action(action_func), buttonText(font) 
+    , action(action_func), buttonText(get_font()) 
 { 
   buttonText.setString(title);
   buttonText.setFillColor(sf::Color::Black);
@@ -38,6 +41,7 @@ void Button::set_action(BUTTON_ACTION *action_func)
 void Button::set_title(const std::string &title)
 {
   buttonText.setString(title);
+  resize_button();
 }
 
 void Button::draw(sf::RenderWindow &window) 
@@ -75,14 +79,6 @@ void Button::draw(sf::RenderWindow &window)
 
   window.draw(drawBox);
   window.draw(buttonText);
-}
-
-void Button::set_font(const string &fontPath)
-{
-  if(!font.openFromFile(FONT_DIR + fontPath))
-  {
-    Logger(Logger::L_ERR, "Invalid font path given");
-  }
 }
 
 void Button::resize_button()

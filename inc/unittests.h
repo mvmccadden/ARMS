@@ -7,6 +7,8 @@
  *    Handles a handful of unit test cases using default inputs
  */
 
+#pragma once
+
 #include "helper.h"
 
 #include "wave.h"

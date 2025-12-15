@@ -32,9 +32,9 @@ std::string Object::get_type_name() const
   return typeName;
 }
 
-float Object::get_resistance_coefficent() const
+float Object::get_absortion_coefficent() const
 {
-  return resistanceCoefficent; 
+  return absortionCoefficent; 
 }
 
 void Object::set_position(const Vec2 &_pos)

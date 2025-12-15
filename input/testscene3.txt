@@ -1,0 +1,67 @@
+Info
+{
+  raycount = 50
+  maxchecks = 8
+  conesize = 30
+  direction = 90
+
+  Coefficent
+  {
+    Name = Cloth
+    Factor = 0.9
+    Color = 25, 62, 83
+  }
+  Coefficent
+  {
+    Name = Cardboard
+    Factor = 0.6
+    Color = 180, 100, 130
+  }
+}
+Source
+{
+  Position
+  {
+    Vec2 = 100, 100
+  }
+  Size
+  {
+    Vec2 = 30, 30
+  }
+}
+Listener
+{
+  Pattern = Omni
+  Position
+  {
+    Vec2 = 300, 300
+  }
+  Size
+  {
+    Vec2 = 30, 30
+  }
+}
+Barrier
+{
+  Type = Cloth
+  Position
+  {
+    Vec2 = 200, 250
+  }
+  Size
+  {
+    Vec2 = 50, 100
+  }
+}
+Barrier
+{
+  Type = Cardboard
+  Position
+  {
+    Vec2 = 400, 50
+  }
+  Size
+  {
+    Vec2 = 10, 90
+  }
+}

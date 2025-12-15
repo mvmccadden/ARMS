@@ -1,6 +1,15 @@
+/*!
+ *  \author Manoel McCadden
+ *  \date   11-27-25
+ *  \file   wave.cpp
+ *
+ *  \brief
+ *    Implementation of wave file handling
+ */
 
 #include "wave.h"
 
+#include <cstring>
 #include <fstream>
 
 #include "helper.h"
@@ -10,6 +19,35 @@ using namespace std;
 //==============================================================================
 //  Wave Header 
 //==============================================================================
+
+WAVE_HEADER::WAVE_HEADER() 
+  : riffLabel{'R', 'I', 'F', 'F'}, riffSize(0u), fileTag{'W', 'A', 'V', 'E'}
+  , fmtLabel{'f', 'm', 't', ' '}, fmtSize(16u), audioFormat(1u), channelCount(1u)
+  , samplingRate(44100u), bytesPerSecond(88200u), bytesPerSample(2u)
+  , bitsPerSample(16u), dataLabel{'d', 'a', 't', 'a'}, dataSize(0u) 
+{
+
+}
+
+/*
+ *  Generates a new wave file header by copying in uint data, memcpy on c-style
+ *  char strings and then generating the headerData for the new wave by using
+ *  the newly copied data
+ */
+WAVE_HEADER::WAVE_HEADER(const WAVE_HEADER& header)
+  : riffSize(header.riffSize), fmtSize(header.fmtSize)
+  , audioFormat(header.audioFormat), channelCount(header.channelCount)
+  , samplingRate(header.samplingRate), bytesPerSecond(header.bytesPerSecond)
+  , bytesPerSample(header.bytesPerSample), bitsPerSample(header.bitsPerSample)
+  , dataSize(header.dataSize)
+{
+  memcpy(riffLabel, header.riffLabel, sizeof(char) * 4);
+  memcpy(fileTag, header.fileTag, sizeof(char) * 4);
+  memcpy(fmtLabel, header.fmtLabel, sizeof(char) * 4);
+  memcpy(dataLabel, header.dataLabel, sizeof(char) * 4);
+
+  generate_wave_header();
+}
 
 void WAVE_HEADER::set_frameCount(unsigned size)
 {
@@ -79,9 +117,33 @@ void WAVE_HEADER::read_wave_header()
 //  Samples
 //==============================================================================
 
+SAMPLES::SAMPLES() : frameCount(0), sampleArray(nullptr) { }
+
+SAMPLES::SAMPLES(const SAMPLES &samples)
+  : frameCount(0), sampleArray(nullptr)
+{
+  *this = samples;
+}
+
 SAMPLES::~SAMPLES()
 {
   clear();
+}
+
+SAMPLES &SAMPLES::operator=(const SAMPLES &samples)
+{
+  clear();
+
+  if(samples.frameCount == 0)
+  {
+    return *this;
+  }
+
+  resize(samples.frameCount);
+
+  memcpy(sampleArray, samples.sampleArray, frameCount * sizeof(float));
+
+  return *this;
 }
 
 void SAMPLES::resize()
@@ -91,6 +153,15 @@ void SAMPLES::resize()
 
 void SAMPLES::resize(const size_t &size)
 {
+  if(size == 0)
+  {
+    clear();
+    return;
+  }
+
+  static_cast<void>(Logger(Logger::L_MSG
+        , "Resizing SAMPLES to size: " + to_string(size)));
+
   float *newArray = new float[size];
 
   // In order to not copy into outside of the bounds of the new
@@ -101,7 +172,15 @@ void SAMPLES::resize(const size_t &size)
     frameCount = size;
   }
 
-  memcpy(newArray, sampleArray, frameCount);
+  if(frameCount > 0)
+  {
+    memcpy(newArray, sampleArray, frameCount * sizeof(float));
+  }
+  // Set all newly allocated index's to 0, if size is greater than frameCount
+  if(size > frameCount)
+  {
+    memset(newArray + frameCount, 0, sizeof(float) * (size - frameCount));
+  }
 
   clear();
 
@@ -152,6 +231,7 @@ void SAMPLES::clear()
   if(sampleArray)
   {
     delete []sampleArray;
+    sampleArray = nullptr;
   }
 
   frameCount = 0;
@@ -166,6 +246,12 @@ WaveFile::WaveFile() { }
 WaveFile::WaveFile(const string &fileName)
 {
   open_file(fileName);
+}
+
+WaveFile::WaveFile(const WaveFile &wave)
+  : open(wave.open), name(wave.name), header(wave.header), samples(wave.samples)
+{
+  
 }
 
 WaveFile::~WaveFile() { }

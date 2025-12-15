@@ -7,6 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(INPUT_DIR "${CMAKE_SOURCE_DIR}/input/") 
 set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/output/") 
 set(FONT_DIR "${CMAKE_SOURCE_DIR}/font/") 
+set(DEFAULT_FONT "${CMAKE_SOURCE_DIR}/font/static/Roboto-Black.ttf") 
 
 # CONFIGURE_DEPENDS tells CMake that files have been added or removed
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS "src/*.cpp")
@@ -55,6 +56,7 @@ target_include_directories(arms PRIVATE inc)
 target_compile_definitions(arms PRIVATE "INPUT_DIR=\"${INPUT_DIR}\"")
 target_compile_definitions(arms PRIVATE "OUTPUT_DIR=\"${OUTPUT_DIR}\"")
 target_compile_definitions(arms PRIVATE "FONT_DIR=\"${FONT_DIR}\"")
+target_compile_definitions(arms PRIVATE "DEFAULT_FONT=\"${DEFAULT_FONT}\"")
 
 target_compile_features(arms PRIVATE cxx_std_17)
 target_link_libraries(arms PRIVATE SFML::Graphics SFML::Audio nfd)

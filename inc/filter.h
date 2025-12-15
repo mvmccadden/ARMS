@@ -7,6 +7,8 @@
  *    Interface file for simple filter creator
  */
 
+#pragma once
+
 #include <vector>
 
 typedef struct SAMPLES SAMPLES;
