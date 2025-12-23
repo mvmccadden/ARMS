@@ -18,7 +18,6 @@ Source
 }
 Listener
 {
-  Pattern = Omni
   Position
   {
     Vec2 = 20, 440

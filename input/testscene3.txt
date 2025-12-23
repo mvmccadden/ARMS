@@ -3,7 +3,7 @@ Info
   raycount = 50
   maxchecks = 8
   conesize = 30
-  direction = 90
+  direction = 270
 
   Coefficent
   {
@@ -31,7 +31,6 @@ Source
 }
 Listener
 {
-  Pattern = Omni
   Position
   {
     Vec2 = 300, 300

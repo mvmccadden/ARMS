@@ -23,6 +23,12 @@
 
 using namespace std;
 
+struct ListenerData
+{
+  string pattern;
+  float angle;
+};
+
 array<Vec2, 2> get_object_data(DataMap::DataMapIterator it)
 {
   array<Vec2, 2> objData = {Vec2{0.f, 0.f}, Vec2{0.f, 0.f}};
@@ -41,6 +47,26 @@ array<Vec2, 2> get_object_data(DataMap::DataMapIterator it)
   }
 
   return objData;
+}
+
+ListenerData get_listener_data(DataMap::DataMapIterator it)
+{
+  ListenerData data = {"Omni", 0.f};
+
+  for(DataMap::DataMapIterator childIt = (*it)->get_children_begin()
+        ; childIt != (*it)->get_children_end(); ++childIt)
+  {
+    if((*childIt)->get_name() == "Pattern")
+    {
+      data.pattern = *(*childIt)->get_casted_data<string>();
+    }
+    else if((*childIt)->get_name() == "Direction")
+    {
+      data.angle = *(*childIt)->get_casted_data<int>();
+    }
+  }
+
+  return data;
 }
 
 void create_custom_coefficents(DataMap::DataMapIterator it)
@@ -83,10 +109,10 @@ vector<Object *> convert_DataMap_to_Object(DataMap *dataMap
     else if((*it)->get_name() == "Listener")
     {
       array<Vec2, 2> objData = get_object_data(it);
-      string *pattern = (*it)->get_casted_data<string>();
+      ListenerData data = get_listener_data(it);
 
       objVec.push_back(new Listener(objData[0] + posOffset, objData[1]
-            , *pattern));
+            , data.angle, data.pattern));
     }
     else if((*it)->get_name() == "Barrier")
     {
@@ -215,6 +241,11 @@ const CollisionInfo detect_collisions(vector<Object *> &objVec
     if(info.parent && info.parent->get_type_name() == "Listener")
     {
       static_cast<void>(Logger(Logger::L_MSG, "Listener Hit!"));
+      float gain = dynamic_cast<Listener*>(info.parent)->get_directional_gain(
+          {rayBegin.x - newRayEnd.x, rayBegin.y - newRayEnd.y});
+      ray->set_amp(ray->get_amp() * gain);
+      static_cast<void>(Logger(Logger::L_MSG, "Listener gain: " 
+            + to_string(ray->get_amp())));
       break;
     }
   }
@@ -261,7 +292,9 @@ vector<vector<AudioRay *>> generate_inital_audio_rays(Object *parent
   const float AR_TWOPI = static_cast<float>(8.0 * atan(1));
   // Convert values from degrees to radians
   const float coneSize = static_cast<float>(info.coneSize) / 360.f * AR_TWOPI;
-  const float direction = static_cast<float>(info.direction) / 360.f * AR_TWOPI;
+  // Inverse of info.direction as the y-axis is flipped
+  const float direction = static_cast<float>(-info.direction) / 360.f 
+    * AR_TWOPI;
   const float degreeIncrement = coneSize / static_cast<float>(info.rayCount);
 
   vector<vector<AudioRay *>> returnVec;

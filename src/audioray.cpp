@@ -73,6 +73,11 @@ void AudioRay::set_posB(const Vec2 &_posB)
   line[1].position = {_posB.x, _posB.y};
 }
 
+void AudioRay::set_amp(const float &amp)
+{
+  amplitude = amp;
+}
+
 void AudioRay::set_color(const sf::Color &color)
 {
   line[0].color = color;

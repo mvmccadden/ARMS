@@ -78,6 +78,14 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
     {
       dataMap = dataMap->add_child(new DataMap("Size", dataMap));
     }
+    else if(line.find("Direction") != string::npos)
+    {
+      dataMap = dataMap->add_child(new DataMap("Direction", dataMap));
+    }
+    else if(line.find("Pattern") != string::npos)
+    {
+      dataMap = dataMap->add_child(new DataMap("Pattern", dataMap));
+    }
     else if(line.find("Coefficent") != string::npos)
     {
       dataMap = dataMap->add_child(new DataMap("Coefficent", dataMap));
@@ -114,6 +122,57 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
 
       dataMap->set_data<Vec2>(new Vec2(static_cast<float>(digits[0])
             , static_cast<float>(digits[1])));
+    }
+    else if(line.find("Int =") != string::npos)
+    {
+      int digit = 0;
+      bool rhs = false;
+      for(char lineChar : line)
+      {
+        if(lineChar == '=')
+        {
+          rhs = true;
+        }
+
+        // Is a digit ascii char
+        else if(rhs && lineChar >= '0' && lineChar <= '9')
+        {
+          // 48 = 0
+          digit *= 10;
+          digit += static_cast<int>(lineChar) - 48;
+        }
+      }
+
+      dataMap->set_data(new int(digit));
+    }
+    else if(line.find("String =") != string::npos)
+    {
+      string str;
+      bool rhs = false;
+      for(char lineChar : line)
+      {
+        if(lineChar == '=')
+        {
+          rhs = true;
+        }
+
+        if(!rhs || lineChar == ' ')
+        {
+          continue;
+        }
+
+        if(lineChar >= 65 && lineChar <= 90)
+        {
+          lineChar += 32;
+        }
+
+        if(lineChar >= 97 && lineChar <= 122)
+        {
+          str += lineChar;
+        }
+      }
+
+      dataMap->set_data(new string(str));
     }
     else if(line.find("Color =") != string::npos)
     {

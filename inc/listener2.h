@@ -20,16 +20,39 @@
 class Listener : public Object
 {
   public:
-    Listener(const Vec2 &pos, const Vec2 &size, const std::string &pattern);
+    enum POLAR_PATTERNS
+    {
+      P_OMNI = 0
+      , P_SUBCARDIOID
+      , P_CARDIOID
+      , P_SUPERCARDIOID
+      , P_HYPERCARDIOID
+      , P_BIDIRECTIONAL
+      , P_COUNT
+    };
+
+    inline static const float PolarCoefficents[P_COUNT] =
+    {
+      0.f, 0.25f, 0.37f, 0.5f, 0.7f, 1.f
+    };
+
+    Listener(const Vec2 &pos, const Vec2 &size, const float &direction
+        , const std::string &pattern);
     ~Listener();
+
+    /*!
+     *  Gets the direcitonal gain of a given ray based on the polar pattern
+     *  of the listener
+     *
+     *  \param ray
+     *    The direction vector of the ray being inputed
+     */
+    float get_directional_gain(Vec2 ray);
 
   private:
     inline static const sf::Color listenerColor = sf::Color::Red;
 
-    struct PatternInfo
-    {
-      std::string pattern;
-      float direction;
-    } patternInfo;
+    Vec2 directionVec;
+    POLAR_PATTERNS polarPattern = P_COUNT;
 };
 

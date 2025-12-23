@@ -44,6 +44,7 @@ class AudioRay
 
     void set_posA(const Vec2 &_posA);
     void set_posB(const Vec2 &_posB);
+    void set_amp(const float &amp);
 
     void set_color(const sf::Color &color);
 

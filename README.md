@@ -27,26 +27,29 @@ types.
 
 A container that defines where the audio source will be located
 
-- Position (a sub-container containing a Vec2 with its 2D position)
-- Size (a sub-container containing a Vec2 with its 2D size)
+- Position (a sub-container containing a Vec2 with its **2D position**)
+- Size (a sub-container containing a Vec2 with its **2D Size**)
 
 ### Listener 
 
 A container that defines where the audio listenr will be located
 
-- Position (a sub-container containing a Vec2 with its 2D position)
-- Size (a sub-container containing a Vec2 with its 2D size)
+- Position (a sub-container containing a Vec2 with its **2D Position**)
+- Size (a sub-container containing a Vec2 with its **2D Size**)
+- Direction (a sub-container containing an Int with its **Polar Angle**)
+- Pattern (a sub-container containing a String with its **Polar Pattern**)
 
+####
 
 ### Barrier
 
 A container that defines where a object that can block audio waves is located
-within the room
+within the room and what acoustic properties it holds
 
-- Type (a default or custom material that this barrier will inherit properties
-  of)
-- Position (a sub-container containing a Vec2 with its 2D position)
-- Size (a sub-container containing a Vec2 with its 2D size)
+- Type (a **Default** or **Custom material** that this barrier will inherit 
+  properties of)
+- Position (a sub-container containing a Vec2 with its **2D position**)
+- Size (a sub-container containing a Vec2 with its **2D size**)
 
 #### Default Material
 
