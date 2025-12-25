@@ -37,8 +37,8 @@ struct CollisionInfo
 std::array<Vec2, 2> get_object_data(DataMap::DataMapIterator it);
 
 std::vector<Object *> convert_DataMap_to_Object(DataMap *dataMap
-    , const Vec2 &posOffset, RayGenerationInfo &info);
+    , const Vec2 &posOffset);
 
 std::vector<std::vector<AudioRay *>> generate_audio_rays_from_scene(
-    const RayGenerationInfo &info, std::vector<Object *> &objVec
-    , const Vec2 &relativePos, const Vec2& relativeSize);
+    std::vector<Object *> &objVec, const Vec2 &relativePos
+    , const Vec2& relativeSize);

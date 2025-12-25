@@ -369,7 +369,7 @@ unsigned WaveFile::get_sampling_rate() const
   return header.samplingRate;
 }
 
-SAMPLES &WaveFile::get_samples()
+CArray<float> &WaveFile::get_samples()
 {
   return samples;
 }

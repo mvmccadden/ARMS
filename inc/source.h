@@ -20,9 +20,20 @@
 class Source : public Object
 {
   public:
-    Source(const Vec2 &pos, const Vec2 &size);
+    Source(const Vec2 &pos, const Vec2 &size, const float &direction
+        , const float &cone, const int &checks, const int &rays);
     ~Source();
     
+    const float &get_direction();
+    const float &get_cone();
+    const int &get_checks();
+    const int &get_rays();
+
   private:
     inline static const sf::Color sourceColor = sf::Color::Blue;
+
+    float direction;
+    float cone;
+    int checks;
+    int rays;
 };

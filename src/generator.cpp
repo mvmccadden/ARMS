@@ -29,6 +29,14 @@ struct ListenerData
   float angle;
 };
 
+struct SourceData
+{
+  float direction;
+  float cone;
+  int checks;
+  int rays;
+};
+
 array<Vec2, 2> get_object_data(DataMap::DataMapIterator it)
 {
   array<Vec2, 2> objData = {Vec2{0.f, 0.f}, Vec2{0.f, 0.f}};
@@ -69,21 +77,75 @@ ListenerData get_listener_data(DataMap::DataMapIterator it)
   return data;
 }
 
-void create_custom_coefficents(DataMap::DataMapIterator it)
+SourceData get_source_data(DataMap::DataMapIterator it)
 {
+  SourceData data = {0.f, 30.f, 10, 30};
+
   for(DataMap::DataMapIterator childIt = (*it)->get_children_begin()
         ; childIt != (*it)->get_children_end(); ++childIt)
   {
-    if((*childIt)->get_name() == "Coefficent")
+    if((*childIt)->get_name() == "Cone")
     {
-      Barrier::set_custom_coefficent(Barrier::get_next_free_custom_coefficent()
-          , *(*childIt)->get_casted_data<Barrier::Coefficents>());
+      data.cone = *(*childIt)->get_casted_data<int>();
+    }
+    else if((*childIt)->get_name() == "Direction")
+    {
+      data.direction = *(*childIt)->get_casted_data<int>();
+    }
+    else if((*childIt)->get_name() == "Checks")
+    {
+      data.checks = *(*childIt)->get_casted_data<int>();
+    }
+    else if((*childIt)->get_name() == "Rays")
+    {
+      data.rays = *(*childIt)->get_casted_data<int>();
     }
   }
+
+  return data;
+}
+
+Barrier::Coefficents create_custom_coefficents(DataMap::DataMapIterator it)
+{
+  Barrier::Coefficents coefficent = {Barrier::INVALID_COEFFICENT_VALUE
+    , sf::Color(0, 0, 0), ""};
+
+  for(DataMap::DataMapIterator childIt = (*it)->get_children_begin()
+        ; childIt != (*it)->get_children_end(); ++childIt)
+  {
+    // TODO: Make this handle actual array values
+    if((*childIt)->get_name() == "Array")
+    {
+      CQueue<float> *queue = (*childIt)->get_casted_data<CQueue<float>>();
+      for(size_t i = 0 ; i < queue->size(); ++i)
+      {
+        coefficent.coefficent = queue->pop();
+      }
+      Logger(Logger::L_WRN, "Custom coefficent value read as: " 
+          + to_string(coefficent.coefficent));
+    }
+    else if((*childIt)->get_name() == "Color")
+    {
+      Vec3 vec3 = *(*childIt)->get_casted_data<Vec3>();
+      coefficent.color = sf::Color(vec3.r, vec3.g, vec3.b);
+    }
+  }
+
+  coefficent.name = *(*it)->get_casted_data<string>();
+  static_cast<void>(Logger(Logger::L_WRN, "Custom coefficent name read as: " 
+        + coefficent.name));
+
+  if(coefficent.coefficent == Barrier::INVALID_COEFFICENT_VALUE 
+      || coefficent.name == "")
+  {
+    Logger(Logger::L_WRN, "Custom coefficent was created with invalid data");
+  }
+
+  return coefficent;
 }
 
 vector<Object *> convert_DataMap_to_Object(DataMap *dataMap
-    , const Vec2 &posOffset, RayGenerationInfo &info)
+    , const Vec2 &posOffset)
 {
   vector<Object *> objVec;
 
@@ -95,16 +157,18 @@ vector<Object *> convert_DataMap_to_Object(DataMap *dataMap
   for(DataMap::DataMapIterator it = dataMap->get_children_begin()
       ; it != dataMap->get_children_end(); ++it)
   {
-    if((*it)->get_name() == "Info")
+    if((*it)->get_name() == "Coefficent")
     {
-      info = *(*it)->get_casted_data<RayGenerationInfo>();
-      create_custom_coefficents(it);
+      Barrier::set_custom_coefficent(Barrier::get_next_free_custom_coefficent()
+          , create_custom_coefficents(it));
     }
     else if((*it)->get_name() == "Source")
     {
       array<Vec2, 2> objData = get_object_data(it);
+      SourceData data = get_source_data(it);
 
-      objVec.push_back(new Source(objData[0] + posOffset, objData[1]));
+      objVec.push_back(new Source(objData[0] + posOffset, objData[1]
+            , data.direction, data.cone, data.checks, data.rays));
     }
     else if((*it)->get_name() == "Listener")
     {
@@ -286,21 +350,24 @@ AudioRay *resolve_collision(AudioRay *ray, const CollisionInfo &info
 }
 
 vector<vector<AudioRay *>> generate_inital_audio_rays(Object *parent
-    , const Vec2 &srcPos, const float &rayDistance
-    , const RayGenerationInfo &info)
+    , const Vec2 &srcPos, const float &rayDistance)
 {
+  Source *source = dynamic_cast<Source*>(parent);
+
   const float AR_TWOPI = static_cast<float>(8.0 * atan(1));
   // Convert values from degrees to radians
-  const float coneSize = static_cast<float>(info.coneSize) / 360.f * AR_TWOPI;
-  // Inverse of info.direction as the y-axis is flipped
-  const float direction = static_cast<float>(-info.direction) / 360.f 
+  const float coneSize = static_cast<float>(source->get_cone()) / 360.f 
     * AR_TWOPI;
-  const float degreeIncrement = coneSize / static_cast<float>(info.rayCount);
+  // Inverse of info.direction as the y-axis is flipped
+  const float direction = static_cast<float>(-source->get_direction()) / 360.f 
+    * AR_TWOPI;
+  const float degreeIncrement = coneSize 
+    / static_cast<float>(source->get_rays());
 
   vector<vector<AudioRay *>> returnVec;
 
   float currentDegree = direction - coneSize / 2.f;
-  for(int i = 0; i < info.rayCount; ++i)
+  for(int i = 0; i < source->get_rays(); ++i)
   {
     Vec2 endPos = {rayDistance * cos(currentDegree)
       , rayDistance * sin(currentDegree)};
@@ -369,7 +436,7 @@ float calculate_t60_time(vector<Object *> &objVec)
   return (0.161f * roomVolume) / (absorbtionSurfaceArea * absorbtionAverage);
 }
 
-float calculate_listener_attenuation(vector<vector<AudioRay *>> &raySet)
+float calculate_listener_peak_amplitude(vector<vector<AudioRay *>> &raySet)
 {
   float attenuation = 0.f;
 
@@ -382,8 +449,7 @@ float calculate_listener_attenuation(vector<vector<AudioRay *>> &raySet)
 }
 
 vector<vector<AudioRay *>> generate_audio_rays_from_scene(
-    const RayGenerationInfo &generationInfo, vector<Object *> &objVec
-    , const Vec2 &relativePos, const Vec2 &relativeSize)
+    vector<Object *> &objVec, const Vec2 &relativePos, const Vec2 &relativeSize)
 {
   // Set defaults and get the source object
   Object *parent;
@@ -401,12 +467,23 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
     }
   }
 
+  Source *source = dynamic_cast<Source*>(parent);
+
+  if(!parent || !source)
+  {
+    static_cast<void>(Logger(Logger::L_ERR, string("No valid Source object ")
+        + " found in given audio vector during scene audio ray generation!"));
+    return returnVec;
+  }
+
+  int maxChecks = source->get_checks();
+
   // Add a wall for collision detection
   Barrier wall(relativePos, relativeSize, "wall");
   objVec.push_back(&wall);
 
   // Generate the inital waves in the TODO: given cone
-  rayVec = generate_inital_audio_rays(parent, srcPos, 1000.f, generationInfo);
+  rayVec = generate_inital_audio_rays(parent, srcPos, 1000.f);
 
   float listenerAmp = 0.f;
 
@@ -420,7 +497,7 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
     CollisionInfo collisionInfo = detect_collisions(objVec, ray); 
     // Then loop until either the collision max is hit meaning we probably 
     // can't hit the listener or we hit the listener
-    for(int i = 0; i < generationInfo.maxChecks && collisionInfo.collision
+    for(int i = 0; i < maxChecks && collisionInfo.collision
         && (collisionInfo.parent 
           && !(collisionInfo.parent->get_type_name() == "Listener")); ++i)
     {
@@ -458,7 +535,7 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
   {
     int index;
     int size;
-  } smallestVecSize {0, generationInfo.maxChecks};
+  } smallestVecSize {0, maxChecks};
   int totalSizes = 0.f;
 
   // Get the louded ray
@@ -517,14 +594,14 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
 
   float t60Time = calculate_t60_time(objVec);
 
-  listenerAmp = calculate_listener_attenuation(returnVec);
+  listenerAmp = calculate_listener_peak_amplitude(returnVec);
 
   static_cast<void>(Logger(Logger::L_MSG, "Calculate T60 time: " 
       + to_string(t60Time)));
   static_cast<void>(Logger(Logger::L_MSG, "Average size of the Audio Rays: " 
       + to_string(averageSize)));
-  static_cast<void>(Logger(Logger::L_MSG, "Amplitude recieved at listener: " 
-      + to_string(listenerAmp)));
+  static_cast<void>(Logger(Logger::L_MSG
+        , "Peak amplitude recieved at listener: " + to_string(listenerAmp)));
 
   // Remove the added wall since we don't need to draw it
   objVec.pop_back();

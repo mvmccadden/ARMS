@@ -27,7 +27,7 @@ class DataMap
     using DataDtor = std::function<void(void *)>;
 
     DataMap(const std::string &_name, DataMap *_parent)
-      : name(_name), parent(_parent)
+      : name(_name), parent(_parent), data(nullptr), dataDtor([](void*){}), children()
     {
     }
     ~DataMap()
@@ -79,7 +79,7 @@ class DataMap
     DataMap *add_child(DataMap *child)
     {
       children.push_back(child);
-      return (child);
+      return children.back();
     }
 
     DataMap *get_parent()
@@ -108,16 +108,6 @@ class DataMap
     void *data = nullptr;
     DataDtor dataDtor;
     std::vector<DataMap *> children;
-};
-
-struct RayGenerationInfo
-{
-  int rayCount = 10;
-  int maxChecks = 10;
-  // In degrees
-  int coneSize = 0;
-  // In Degrees (center of cone)
-  int direction = 0;
 };
 
 DataMap *read_scene_file(std::string fileName

@@ -93,6 +93,10 @@ float Vec2::dot(const Vec2 &other) const
   return x * other.x + y * other.y;
 }
 
+Vec3::Vec3(float _x, float _y, float _z)
+  : x(_x), y(_y), z(_z)
+{
+}
 
 float map_range_to(const float &value, const float &valueMin
     , const float &valueMax, const float &mapMin, const float &mapMax)

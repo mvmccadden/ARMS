@@ -40,5 +40,29 @@ struct Vec2
   };
 };
 
+struct Vec3
+{
+  Vec3(float _x, float _y, float _z);
+
+  union
+  {
+    float x;
+    float w;
+    float r;
+  };
+  union
+  {
+    float y;
+    float h;
+    float g;
+  };
+  union
+  {
+    float z;
+    float l;
+    float b;
+  };
+};
+
 float map_range_to(const float &value, const float &valueMin
     , const float &valueMax, const float &mapMin, const float &mapMax);

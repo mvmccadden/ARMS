@@ -11,6 +11,8 @@
 
 #include <vector>
 
+#include "helper.h"
+
 typedef struct SAMPLES SAMPLES;
 
 class Filter
@@ -27,7 +29,7 @@ class Filter
 
     void add_coefficent(const COEFFICENT &coefficent);
 
-    void apply_filter(SAMPLES &samples);
+    void apply_filter(CArray<float> &samples);
   private:
   std::vector<COEFFICENT> coefficents;
 };

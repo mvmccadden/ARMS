@@ -79,10 +79,9 @@ void Scene::open_scene(const string &fileName, const bool &ignoreInputDir)
     static_cast<void>(Logger(Logger::L_ERR, "Invalid map was created"));
   }
 
-  RayGenerationInfo info;
-  objects = convert_DataMap_to_Object(dataMap, relativePos, info);
-  audioRayVec = generate_audio_rays_from_scene(info, objects
-      , relativePos, relativeSize);
+  objects = convert_DataMap_to_Object(dataMap, relativePos);
+  audioRayVec = generate_audio_rays_from_scene(objects, relativePos
+      , relativeSize);
 
   open = true;
 }
@@ -154,7 +153,7 @@ void Scene::apply_t60_to_wave(WaveFile &wave)
     ? relativeSize.x / 34300.f * wave.get_sampling_rate()
     : relativeSize.y / 34300.f * wave.get_sampling_rate();
 
-  SAMPLES output;
+  CArray<float> output;
   output.resize(wave.get_samples().size());
   // Random number generator for getting other delays
   random_device randomDevice;
@@ -197,9 +196,10 @@ void Scene::draw(sf::RenderWindow &window)
 
 // TODO: Add comb delay and allpass 
 void Scene::add_reverb_filter(const uint16_t &delay, const float &coefficent
-    , const float &outputScale, const SAMPLES &input, SAMPLES &output)
+    , const float &outputScale, const CArray<float> &input
+    , CArray<float> &output)
 {
-  SAMPLES delayLine(input);
+  CArray<float> delayLine(input);
   // Ensure the output and delayLine size account for the added delay
   delayLine.resize(delayLine.size() + delay);
   if(output.size() < delayLine.size())

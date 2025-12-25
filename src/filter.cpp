@@ -23,7 +23,7 @@ void Filter::add_coefficent(const COEFFICENT &coefficent)
   coefficents.push_back(coefficent);
 }
 
-void Filter::apply_filter(SAMPLES &samples)
+void Filter::apply_filter(CArray<float> &samples)
 {
   size_t size = samples.size();
   float *input = new float[size];

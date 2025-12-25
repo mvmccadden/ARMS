@@ -14,6 +14,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 
 #include "arms_math.h"
+#include "helper.h"
 
 typedef class AudioRay AudioRay;
 typedef class Object Object;
@@ -63,7 +64,8 @@ class Scene
      *    A reference to the output data that will be mixed together
      */
     void add_reverb_filter(const uint16_t &delay, const float &coefficent
-        , const float &outputScale, const SAMPLES &input, SAMPLES &output);
+        , const float &outputScale, const CArray<float> &input
+        , CArray<float> &output);
     void generate_scene_filter();
     void clear();
 

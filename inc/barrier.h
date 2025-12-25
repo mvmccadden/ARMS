@@ -45,6 +45,18 @@ class Barrier : public Object
 
     static inline const float INVALID_COEFFICENT_VALUE = -1.f;
 
+    struct FrequencyCoefficents
+    {
+      static inline constexpr uint8_t VALUE_COUNT = 6;
+      struct FreqCoeffValues
+      {
+        uint16_t frequency;
+        float coefficent;
+      } values[6];
+      sf::Color color;
+      std::string name;
+    };
+
     struct Coefficents 
     {
       float coefficent;

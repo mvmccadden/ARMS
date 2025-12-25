@@ -14,6 +14,8 @@
 #include <memory.h>
 #include <string>
 
+#include "helper.h"
+
 // Default format for wave header
 /*!
  *  \struct WAVE_HEADER
@@ -267,9 +269,9 @@ class WaveFile
     unsigned get_sampling_rate() const;
     /*!
      *  \returns
-     *    A reference to the SAMPLES struct of the currently open WaveFile
+     *    A reference to the CArray samples of the currently open WaveFile
      */
-    SAMPLES &get_samples();
+    CArray<float> &get_samples();
   private:
     /*!
      *  Converts pcm values to float sample values and places them within 
@@ -290,5 +292,5 @@ class WaveFile
     std::string name;
 
     WAVE_HEADER header;
-    SAMPLES samples;
+    CArray<float> samples;
 };
