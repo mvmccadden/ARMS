@@ -8,6 +8,7 @@
 #include <nfd.h>
 
 #include "colors.h"
+#include "generator.h"
 #include "object.h"
 #include "scene.h"
 #include "textbox.h"
@@ -28,24 +29,34 @@ int main()
   /*
    *  Setup defaults for scene
    */
-  sf::RenderWindow window = sf::RenderWindow(sf::VideoMode({800, 600})
+  sf::RenderWindow window = sf::RenderWindow(sf::VideoMode({1400, 1050})
     , "arms");
   window.setFramerateLimit(144);
 
-  Vec2 scenePos = {20.f, 20.f};
-  Vec2 sceneSize = {500.f, 500.f};
-  Vec2 buttonContainerPos = {560.f, 20.f};
-  Vec2 buttonContainerSize = {200.f, 240.f};
+  Vec2 sceneBkPos = {20.f, 20.f};
+  Vec2 sceneBkSize = DEFAULT_ROOM_SIZE + Vec2{10.f, 10.f};
+  Vec2 scenePos = {25.f, 25.f};
+  Vec2 sceneSize = DEFAULT_ROOM_SIZE;
+  Vec2 buttonContainerPos = {1100.f, 100.f};
+  Vec2 buttonContainerSize = {250.f, 270.f};
+  Vec2 buttonContainerPadding = {25.f, 25.f};
+  Vec2 buttonContainerItemStart = buttonContainerPos + buttonContainerPadding;
+  Vec2 buttonSize = {200.f, 26.f};
+  float buttonContainerYSectionOffset = 45.f;
+  float buttonContainerYItemOffset = 35.f;
 
   // Init UI related objects and UI font
   init_font();
   vector<Object *> ui;
-  ui.push_back(new Object(scenePos, sceneSize));
+  ui.push_back(new Object(sceneBkPos, sceneBkSize));
+  ui.back()->set_color(uiBackground);
+  Object *p_drawScene = new Object(scenePos, sceneSize);
+  ui.push_back(p_drawScene);
   ui.back()->set_color(sceneBackground);
   ui.push_back(new Object(buttonContainerPos, buttonContainerSize));
   ui.back()->set_color(uiBackground);
 
-  Scene scene(scenePos, sceneSize);
+  Scene scene(scenePos, sceneSize, {1.f, 1.f});
 
   // TEST: INPUT OUTPUT FOR WAVE
   //
@@ -60,13 +71,17 @@ int main()
   /*
    *  Setup scene UI buttons and text
    */
-  TextBox *sceneTitle = new TextBox("Scene: ", {580.f, 40.f}, {160.f, 20.f});
-  TextBox *waveTitle= new TextBox("Wav: ", {580.f, 120.f}, {160.f, 20.f});
+  TextBox *sceneTitle = new TextBox("Scene: "
+      , buttonContainerItemStart, buttonSize);
 
   ui.push_back(sceneTitle);
   // Button for selecting room scene
-  ui.push_back(new Button("Select Scene", {580.f, 70.f}, {160.f, 20.f}
-        , [&scene, &sceneTitle] 
+  ui.push_back(new Button("Select Scene"
+        , {buttonContainerItemStart.x
+          , buttonContainerItemStart.y 
+            + buttonContainerYItemOffset}
+        , buttonSize
+        , [&scene, &sceneTitle, &p_drawScene] 
         {
           nfdchar_t *outPath = NULL;
           nfdresult_t result = NFD_OpenDialog("txt", INPUT_DIR, &outPath);
@@ -90,7 +105,8 @@ int main()
             }
 
             sceneTitle->set_title("Scene: " + filePath);
-            scene.open_scene(outPath, true);
+            Vec2 newSceneSize = scene.open_scene(outPath, true);
+            p_drawScene->set_size(newSceneSize);
           }
           else if(result != NFD_CANCEL)
           {
@@ -100,11 +116,20 @@ int main()
           if(outPath) free(outPath);
         }));
 
+  TextBox *waveTitle= new TextBox("Wav: "
+      , {buttonContainerItemStart.x
+        , buttonContainerItemStart.y 
+          + buttonContainerYItemOffset + buttonContainerYSectionOffset}
+      , buttonSize);
   ui.push_back(waveTitle);
   /*
    *  Button for selecting .wav file for input
    */
-  ui.push_back(new Button("Select Wav", {580.f, 150.f}, {160.f, 20.f}
+  ui.push_back(new Button("Select Wav"
+      , {buttonContainerItemStart.x
+        , buttonContainerItemStart.y 
+          + 2 * buttonContainerYItemOffset + buttonContainerYSectionOffset}
+        , buttonSize
         , [&wave, &waveTitle] 
         {
           nfdchar_t *outPath = NULL;
@@ -142,7 +167,11 @@ int main()
   /*
    *  Button for generating an output.wav based on room and input.wav
    */
-  ui.push_back(new Button("Generate Room Output", {580.f, 190.f}, {160.f, 20.f}
+  ui.push_back(new Button("Generate Room Output"
+      , {buttonContainerItemStart.x
+        , buttonContainerItemStart.y 
+          + 2 * buttonContainerYItemOffset + 2 * buttonContainerYSectionOffset}
+        , buttonSize
         , [&scene, &wave] 
         {
           if(!scene.is_open())
@@ -176,7 +205,11 @@ int main()
 
           if(outPath) free(outPath);
         }));
-  ui.push_back(new Button("Generate T60 Output", {580.f, 220.f}, {160.f, 20.f}
+  ui.push_back(new Button("Generate T60 Output"
+      , {buttonContainerItemStart.x
+        , buttonContainerItemStart.y 
+          + 3 * buttonContainerYItemOffset + 2 * buttonContainerYSectionOffset}
+        , buttonSize
         , [&scene, &wave] 
         {
           if(!scene.is_open())

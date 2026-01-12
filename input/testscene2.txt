@@ -1,12 +1,19 @@
+Room
+{
+  Size
+  {
+    Vec2 = 1600, 900
+  }
+}
 Source
 {
   Position
   {
-    Vec2 = 300, 200
+    Vec2 = 960, 640
   }
   Size
   {
-    Vec2 = 20, 20
+    Vec2 = 64, 64 
   }
   Direction
   {
@@ -14,7 +21,7 @@ Source
   }
   Cone
   {
-    Int = 20
+    Int = 30
   }
   Checks
   {
@@ -29,11 +36,11 @@ Listener
 {
   Position
   {
-    Vec2 = 20, 440
+    Vec2 = 64, 1408 
   }
   Size
   {
-    Vec2 = 10, 10
+    Vec2 = 32, 32 
   }
 }
 Barrier
@@ -41,11 +48,11 @@ Barrier
   String = Wood
   Position
   {
-    Vec2 = 100, 10
+    Vec2 = 320, 32 
   }
   Size
   {
-    Vec2 = 10, 100
+    Vec2 = 32, 320 
   }
 }
 Barrier
@@ -53,11 +60,11 @@ Barrier
   String = Rubber
   Position
   {
-    Vec2 = 400, 300
+    Vec2 = 1280, 960 
   }
   Size
   {
-    Vec2 = 20, 80
+    Vec2 = 64, 256 
   }
 }
 Barrier
@@ -65,10 +72,10 @@ Barrier
   String = Rubber
   Position
   {
-    Vec2 = 200, 400
+    Vec2 = 640, 1280 
   }
   Size
   {
-    Vec2 = 10, 80
+    Vec2 = 32, 256 
   }
 }

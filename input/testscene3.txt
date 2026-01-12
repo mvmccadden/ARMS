@@ -1,3 +1,10 @@
+Room
+{
+  Size
+  {
+    Vec2 = 500, 500
+  }
+}
 Coefficent
 {
   String = Cloth
@@ -5,7 +12,7 @@ Coefficent
   {
     Vec3 = 25, 62, 83
   }
-  DArray[1]
+  DoubleArray[1]
   {
     Double = 0.9
   }
@@ -17,7 +24,7 @@ Coefficent
   {
     Vec3 = 180, 100, 130
   }
-  DArray[1]
+  DoubleArray[1]
   {
     Double = 0.6
   }

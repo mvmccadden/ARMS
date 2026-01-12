@@ -109,7 +109,11 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
   string line;
   while(getline(file, line))
   {
-    if(line.find("Source") != string::npos)
+    if(line.find("Room") != string::npos)
+    {
+      dataMap = dataMap->add_child(new DataMap("Room", dataMap));
+    }
+    else if(line.find("Source") != string::npos)
     {
       dataMap = dataMap->add_child(new DataMap("Source", dataMap));
     }
@@ -164,11 +168,11 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
       int size = get_int_from_line(line, line.find("Array[") + sizeof("Array["));
       // Detects if a char was included to denote type of array objects, default
       // is "I" or int
-      if(line.find("D"))
+      if(line.find("Double"))
       {
         dataMap->set_data(new CQueue<float>(size));
       }
-      else if(line.find("S"))
+      else if(line.find("String"))
       {
         dataMap->set_data(new CQueue<string>(size));
       }

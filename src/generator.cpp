@@ -37,6 +37,38 @@ struct SourceData
   int rays;
 };
 
+Vec4 get_room_size(DataMap *dataMap)
+{
+  for(DataMap::DataMapIterator it = dataMap->get_children_begin()
+      ; it != dataMap->get_children_end(); ++it)
+  {
+    if((*it)->get_name() == "Room")
+    {
+      for(DataMap::DataMapIterator childIt = (*it)->get_children_begin()
+          ; childIt != (*it)->get_children_end(); ++childIt)
+      {
+        if((*childIt)->get_name() == "Size")
+        {
+          Vec2 size = *(*childIt)->get_casted_data<Vec2>();
+
+          Vec2 scaleVec = DEFAULT_ROOM_SIZE / size;
+          Vec2 sceneScalar = (scaleVec.x < scaleVec.y)
+            ? Vec2{scaleVec.x, scaleVec.x * size.y / size.x } 
+              : Vec2{scaleVec.y * size.x / size.y, scaleVec.y};
+
+          Vec2 scaledScene = (scaleVec.x < scaleVec.y)
+            ? size * scaleVec.x : size * scaleVec.y;
+
+          return Vec4{scaledScene.x, scaledScene.y
+            , sceneScalar.x, sceneScalar.y};
+        }
+      }
+    }
+  }
+
+  return Vec4{DEFAULT_ROOM_SIZE.x, DEFAULT_ROOM_SIZE.y, 1.f, 1.f};
+}
+
 array<Vec2, 2> get_object_data(DataMap::DataMapIterator it)
 {
   array<Vec2, 2> objData = {Vec2{0.f, 0.f}, Vec2{0.f, 0.f}};
@@ -145,7 +177,7 @@ Barrier::Coefficents create_custom_coefficents(DataMap::DataMapIterator it)
 }
 
 vector<Object *> convert_DataMap_to_Object(DataMap *dataMap
-    , const Vec2 &posOffset)
+    , const Vec2 &posOffset, const Vec2 &scalar)
 {
   vector<Object *> objVec;
 
@@ -167,23 +199,25 @@ vector<Object *> convert_DataMap_to_Object(DataMap *dataMap
       array<Vec2, 2> objData = get_object_data(it);
       SourceData data = get_source_data(it);
 
-      objVec.push_back(new Source(objData[0] + posOffset, objData[1]
-            , data.direction, data.cone, data.checks, data.rays));
+      objVec.push_back(new Source(objData[0] * scalar + posOffset 
+            , objData[1] * scalar, data.direction, data.cone
+            , data.checks, data.rays));
     }
     else if((*it)->get_name() == "Listener")
     {
       array<Vec2, 2> objData = get_object_data(it);
       ListenerData data = get_listener_data(it);
 
-      objVec.push_back(new Listener(objData[0] + posOffset, objData[1]
-            , data.angle, data.pattern));
+      objVec.push_back(new Listener(objData[0] * scalar + posOffset 
+            , objData[1] * scalar, data.angle, data.pattern));
     }
     else if((*it)->get_name() == "Barrier")
     {
       string type = *(*it)->get_casted_data<string>();
       array<Vec2, 2> objData = get_object_data(it);
 
-      objVec.push_back(new Barrier(objData[0] + posOffset, objData[1], type));
+      objVec.push_back(new Barrier(objData[0] * scalar + posOffset 
+            , objData[1] * scalar, type));
     }
   }
 
@@ -330,27 +364,33 @@ const CollisionInfo detect_collisions(vector<Object *> &objVec
 }
 
 AudioRay *resolve_collision(AudioRay *ray, const CollisionInfo &info
-    , const float &distance)
+    , const Vec2 &scalar)
 {
   Vec2 posA = ray->get_posA();
   Vec2 posB = ray->get_posB();
   float amp = ray->get_amp() * (1.f - info.parent->get_absortion_coefficent());
 
   Vec2 incidentVec = posB - posA;
-  Vec2 lineDirection = info.lineEnd - info.lineBegin;
+
+  // Transform the incident Vec into physical space based on scene size
+  Vec2 phyIncident = incidentVec / scalar;
+
+  Vec2 lineDirection = info.lineEnd / scalar - info.lineBegin / scalar;
   Vec2 normalVec(-lineDirection.y, lineDirection.x);
   normalVec.normalize();
 
-  Vec2 reflectedVec = incidentVec 
-    - normalVec * 2.f * incidentVec.dot(normalVec);
-  reflectedVec.normalize();
-  Vec2 posC = posB + reflectedVec * distance;
+  Vec2 reflectedVec = phyIncident 
+    - normalVec * 2.f * phyIncident.dot(normalVec);
+  // Scale the reflection into the scene
+  Vec2 scaledReflection = reflectedVec * scalar;
+  scaledReflection.normalize();
+  Vec2 posC = posB + scaledReflection * DEFAULT_RAY_DISTANCE;
 
   return new AudioRay(info.parent, info.parentLine, amp, posB, posC);
 }
 
 vector<vector<AudioRay *>> generate_inital_audio_rays(Object *parent
-    , const Vec2 &srcPos, const float &rayDistance)
+    , const Vec2 &srcPos)
 {
   Source *source = dynamic_cast<Source*>(parent);
 
@@ -369,8 +409,8 @@ vector<vector<AudioRay *>> generate_inital_audio_rays(Object *parent
   float currentDegree = direction - coneSize / 2.f;
   for(int i = 0; i < source->get_rays(); ++i)
   {
-    Vec2 endPos = {rayDistance * cos(currentDegree)
-      , rayDistance * sin(currentDegree)};
+    Vec2 endPos = Vec2{cos(currentDegree), sin(currentDegree)} 
+      * DEFAULT_RAY_DISTANCE;
     currentDegree += degreeIncrement;
     vector<AudioRay *> newVec;
     newVec.push_back(new AudioRay(parent, NULL_LINES, DEFAULT_AMP, srcPos
@@ -449,7 +489,8 @@ float calculate_listener_peak_amplitude(vector<vector<AudioRay *>> &raySet)
 }
 
 vector<vector<AudioRay *>> generate_audio_rays_from_scene(
-    vector<Object *> &objVec, const Vec2 &relativePos, const Vec2 &relativeSize)
+    vector<Object *> &objVec, const Vec2 &relativePos
+    , const Vec2 &relativeSize, const Vec2 &scalar)
 {
   // Set defaults and get the source object
   Object *parent;
@@ -483,7 +524,7 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
   objVec.push_back(&wall);
 
   // Generate the inital waves in the TODO: given cone
-  rayVec = generate_inital_audio_rays(parent, srcPos, 1000.f);
+  rayVec = generate_inital_audio_rays(parent, srcPos);
 
   float listenerAmp = 0.f;
 
@@ -501,7 +542,7 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
         && (collisionInfo.parent 
           && !(collisionInfo.parent->get_type_name() == "Listener")); ++i)
     {
-      AudioRay *newRay = resolve_collision(ray, collisionInfo, 1000.f);
+      AudioRay *newRay = resolve_collision(ray, collisionInfo, scalar);
       amp = map_range_to(newRay->get_amp(), 0.f, 1.f, 60.f, 160.f);
       newRay->set_color(sf::Color(0.f, amp, 0.f, amp));
       ray = newRay;

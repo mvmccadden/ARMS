@@ -24,13 +24,14 @@
 
 using namespace std;
 
-Scene::Scene(const Vec2 &topLeftPos, const Vec2 &size)
-  : relativePos(topLeftPos), relativeSize(size), filter(nullptr) { }
+Scene::Scene(const Vec2 &topLeftPos, const Vec2 &size, const Vec2 &scalar)
+  : relativePos(topLeftPos), relativeSize(size), relativeScalar(scalar)
+    , filter(nullptr) { }
 
 Scene::Scene(const string &fileName, const Vec2 &topLeftPos, const Vec2 &size
-    , const bool &ignoreInputDir)
+    , const Vec2 &scalar, const bool &ignoreInputDir)
   : relativePos(topLeftPos), relativeSize(size), currentSamplingRate(0u)
-    , filter(nullptr)
+    , relativeScalar(scalar) , filter(nullptr)
 {
   open_scene(fileName, ignoreInputDir);
 }
@@ -45,7 +46,7 @@ bool Scene::is_open() const
   return open;
 }
 
-void Scene::open_scene(const string &fileName, const bool &ignoreInputDir)
+Vec2 Scene::open_scene(const string &fileName, const bool &ignoreInputDir)
 {
   clear();
 
@@ -79,11 +80,17 @@ void Scene::open_scene(const string &fileName, const bool &ignoreInputDir)
     static_cast<void>(Logger(Logger::L_ERR, "Invalid map was created"));
   }
 
-  objects = convert_DataMap_to_Object(dataMap, relativePos);
-  audioRayVec = generate_audio_rays_from_scene(objects, relativePos
-      , relativeSize);
-
   open = true;
+  
+  Vec4 roomData = get_room_size(dataMap);
+  relativeSize = Vec2{roomData.x, roomData.y};
+  relativeScalar = Vec2{roomData.z, roomData.w};
+
+  objects = convert_DataMap_to_Object(dataMap, relativePos, relativeScalar);
+  audioRayVec = generate_audio_rays_from_scene(objects, relativePos
+      , relativeSize, relativeScalar);
+
+  return relativeSize;
 }
 
 void Scene::apply_filter_to_wave(WaveFile &wave)

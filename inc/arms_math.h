@@ -64,5 +64,31 @@ struct Vec3
   };
 };
 
+struct Vec4
+{
+  Vec4(float _x, float _y, float _z, float _w);
+
+  union
+  {
+    float x;
+    float r;
+  };
+  union
+  {
+    float y;
+    float g;
+  };
+  union
+  {
+    float z;
+    float b;
+  };
+  union
+  {
+    float w;
+    float a;
+  };
+};
+
 float map_range_to(const float &value, const float &valueMin
     , const float &valueMax, const float &mapMin, const float &mapMax);

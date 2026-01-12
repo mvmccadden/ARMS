@@ -92,6 +92,36 @@ class CArray
     }
 
 
+    CArray &operator+=(const CArray &other)
+    {
+      if(count != other.count)
+      {
+        static_cast<void>(Logger(Logger::L_MSG
+              , "CArray sizes do not match for += operation"));
+
+        if(count < other.count)
+        {
+          resize(other.count);
+        }
+      }
+      
+      // Add up to other count since this head will be resized if it is smaller
+      // than the others head
+      for(size_t i = 0; i < other.count; ++i)
+      {
+        head[i] += other.head[i];
+      }
+
+      return *this;
+    }
+
+    CArray operator+(const CArray &other)
+    {
+      CArray output(*this);
+      return output += other;
+    }
+
+
     const size_t &size() const
     {
       return count;

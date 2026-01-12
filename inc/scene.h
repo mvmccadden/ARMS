@@ -30,12 +30,24 @@ using ObjectVec = std::vector<Object *>;
 class Scene
 {
   public:
-    Scene(const Vec2 &topLeftPos, const Vec2 &size);
+    Scene(const Vec2 &topLeftPos, const Vec2 &size, const Vec2 &scalar);
     Scene(const std::string &fileName, const Vec2 &topLeftPos
-        , const Vec2 &size, const bool &ignoreInputDir = false);
+        , const Vec2 &size, const Vec2 &scalar
+        , const bool &ignoreInputDir = false);
     ~Scene();
 
-    void open_scene(const std::string &fileName
+    /*!
+     *  Opens a new scene based on a user given file path
+     *
+     *  \param fileName
+     *    The name and path of the file being opened with the scene
+     *  \param ignoreInputDir
+     *    If the file should be searched for starting from the input directory
+     *
+     *  \returns
+     *    The size of the new scene object
+     */
+    Vec2 open_scene(const std::string &fileName
         , const bool &ignoreInputDir = false);
 
     bool is_open() const;
@@ -73,6 +85,7 @@ class Scene
 
     Vec2 relativePos;
     Vec2 relativeSize;
+    Vec2 relativeScalar;
     unsigned currentSamplingRate;
 
     std::string name;

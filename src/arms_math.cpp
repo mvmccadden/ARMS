@@ -98,6 +98,11 @@ Vec3::Vec3(float _x, float _y, float _z)
 {
 }
 
+Vec4::Vec4(float _x, float _y, float _z, float _w)
+  : x(_x), y(_y), z(_z), w(_w)
+{
+}
+
 float map_range_to(const float &value, const float &valueMin
     , const float &valueMax, const float &mapMin, const float &mapMax)
 {
