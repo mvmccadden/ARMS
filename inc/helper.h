@@ -9,9 +9,12 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
+#include <exception>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <memory.h>
 
 class Logger
@@ -57,7 +60,7 @@ class CArray
     }
 
     CArray(const size_t &initalcount)
-      : head(new T[initalcount]), count(initalcount)
+      : head(new T[initalcount]{}), count(initalcount)
     {
     }
 
@@ -67,6 +70,22 @@ class CArray
       *this = other;
     }
 
+    /*!
+     *  Creates a C-Style array with a std::initializer_list
+     *
+     *  \param array
+     *    An array of type T with a size of N values
+     */
+    CArray(std::initializer_list<T> array)
+      : head(new T[array.size()]{}), count(array.size())
+    {
+      size_t i = 0;
+      for(const T &value : array)
+      {
+        head[i++] = value;
+      }
+    }
+
     ~CArray()
     {
       clear();
@@ -74,6 +93,11 @@ class CArray
 
     CArray &operator=(const CArray &other)
     {
+      if(this == &other)
+      {
+        return *this;
+      }
+
       clear();
 
       if(other.count == 0)
@@ -136,12 +160,14 @@ class CArray
     {
       if(index >= count)
       {
+        /*
         // Send a warning if attempting to dereference but resize the array
         static_cast<void>(Logger(Logger::L_WRN, 
               std::string("Attempted to dereference an invalid index value. ")
               + "Instead, reallocated sample array to size of: " 
-              + std::to_string(index + 1)));
-        resize(index + 1);
+              + std::to_string((index + 1) * 2)));
+        */
+        resize((index + 1) * 2);
       }
 
       return head[index];
@@ -149,11 +175,18 @@ class CArray
 
     const T &at(const size_t &index) const
     {
+      if(!head || count == 0)
+      {
+        throw "Calling at() when no valid value in CArray";
+      }
+
       if(index >= count)
       {
+        /*
         static_cast<void>(Logger(Logger::L_WRN, 
               std::string("Attempted to dereference an invalid index value. ")
               + "Instead, returning last index value!"));
+        */
         return head[count - 1];
       }
 
@@ -174,22 +207,16 @@ class CArray
         return;
       }
 
-      T *newHead = new T[newSize];
+      T *newHead = new T[newSize]{};
 
       size_t copyCount = (count < newSize) ? count : newSize;
 
-      if(count > 0)
+      if(head && count > 0)
       {
         for(size_t i = 0; i < copyCount; ++i)
         {
           newHead[i] = head[i];
         }
-      }
-      // Set all newly allocated index's to 0 if the size is now greater than
-      // before
-      if(newSize > count)
-      {
-        memset(newHead + copyCount, 0, (newSize - copyCount) * sizeof(T));
       }
 
       clear();
@@ -200,8 +227,14 @@ class CArray
 
     void clear()
     {
-      if(head)
+      if(head != nullptr)
       {
+        /*
+        std::stringstream ss; 
+        ss << static_cast<const void *>(head);
+        static_cast<void>(Logger(Logger::L_MSG, "CLEARING CARRAY. SIZE: "
+            + std::to_string(count) + ", PTR: " + ss.str()));
+        */
         delete []head;
         head = nullptr;
       }
@@ -242,6 +275,11 @@ class CQueue
 
     CQueue &operator=(const CQueue &other)
     {
+      if(this == &other)
+      {
+        return *this;
+      }
+
       array = other.array;
       front_ = other.front_;
       back_ = other.back_;
@@ -274,7 +312,7 @@ class CQueue
       }
 
       array[back_] = value;
-      back_ = (back_ + 1) % array.size();
+      back_ = (back_ + 1) % ((array.size() == 0) ? 1 : array.size());
       ++count_;
     }
 
@@ -288,7 +326,7 @@ class CQueue
     {
       if(count_ == 0)
       {
-        return T();
+        throw "Invalid pop on empty CQueue";
       }
 
       size_t currentFront = front_;

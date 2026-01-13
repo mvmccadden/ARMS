@@ -14,6 +14,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 
 #include "arms_math.h"
+#include "filter.h"
 #include "helper.h"
 
 typedef class AudioRay AudioRay;
@@ -60,11 +61,17 @@ class Scene
     void draw(sf::RenderWindow &window);
   private:
     /*!
-     *  Adds a reverb filter based on user given delay to a given input.
+     *  Adds a bandpass reverb filter based on user given delay to 
+     *  a given input.
      *  Instead of overwriting the input it adds it to a given output.
+     *
      *
      *  \param delay
      *    The delay for the comb filter
+     *  \param frequency
+     *    The frequency of the bandpass filter
+     *  \param bandCount
+     *    The number of bands in the bandpass filter
      *  \param coefficent
      *    The T60-based absorbtion coefficent
      *  \param outputScale
@@ -75,9 +82,10 @@ class Scene
      *  \param output
      *    A reference to the output data that will be mixed together
      */
-    void add_reverb_filter(const uint16_t &delay, const float &coefficent
-        , const float &outputScale, const CArray<float> &input
-        , CArray<float> &output);
+    void add_bandpass_reverb_filter(const uint16_t &delay
+        , const float &frequency, const size_t &bandCount
+        , const float &coefficent, const float &outputScale
+        , const CArray<float> &input, CArray<float> &output);
     void generate_scene_filter();
     void clear();
 
@@ -90,7 +98,7 @@ class Scene
 
     std::string name;
 
-    Filter *filter;
+    CArray<Equalizer> filters;
     AudioRayVec audioRayVec;
     ObjectVec objects;
 };

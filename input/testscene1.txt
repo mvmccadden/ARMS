@@ -25,7 +25,7 @@ Source
   }
   Checks
   {
-    Int = 8
+    Int = 6
   }
   Rays
   {

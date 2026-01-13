@@ -176,6 +176,10 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
       {
         dataMap->set_data(new CQueue<string>(size));
       }
+      else if(line.find("Vec2"))
+      {
+        dataMap->set_data(new CQueue<Vec2>(size));
+      }
       else
       {
         dataMap->set_data(new CQueue<int>(size));
@@ -243,8 +247,10 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
     }
     else if(line.find("Vec2 =") != string::npos)
     {
-      array<int, 2> digits = {0};
+      array<float, 2> digits = {0};
       int currentDigit = 0;
+      int decimalPlaces = 0;
+      bool decimal = false;
       bool rhs = false;
       for(char lineChar : line)
       {
@@ -252,22 +258,52 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
         {
           rhs = true;
         }
-
         // Is a digit ascii char
         else if(rhs && lineChar >= '0' && lineChar <= '9')
         {
-          // 48 = 0
-          digits[currentDigit] *= 10;
-          digits[currentDigit] += static_cast<int>(lineChar) - 48;
+          // Right side of decimal
+          if(decimal)
+          {
+            float value = static_cast<int>(lineChar) - 48;
+            ++decimalPlaces;
+
+            for(uint8_t i = 0; i < decimalPlaces; ++i)
+            {
+              value *= 0.1f;
+            }
+
+            digits[currentDigit] += value;
+            Logger(Logger::L_MSG, "DECIMAL POINT: " + to_string(digits[currentDigit]));
+          }
+          else
+          {
+            // 48 = 0
+            digits[currentDigit] *= 10;
+            digits[currentDigit] += static_cast<int>(lineChar) - 48;
+          }
         }
         else if(rhs && lineChar == ',')
         {
           ++currentDigit;
+          decimal = false;
+        }
+        // ascii '.'
+        else if(lineChar == 46)
+        {
+          decimal = true;
         }
       }
 
-      dataMap->set_data<Vec2>(new Vec2(static_cast<float>(digits[0])
-            , static_cast<float>(digits[1])));
+      if(dataMap->get_name() == "Array")
+      {
+        dataMap->get_casted_data<CQueue<Vec2>>()->push(
+            Vec2(static_cast<float>(digits[0]), static_cast<float>(digits[1])));
+      }
+      else
+      {
+        dataMap->set_data<Vec2>(new Vec2(static_cast<float>(digits[0])
+              , static_cast<float>(digits[1])));
+      }
     }
     else if(line.find("Vec3 =") != string::npos)
     {

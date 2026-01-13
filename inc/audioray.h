@@ -14,9 +14,6 @@
 #include "arms_math.h"
 #include "object.h"
 
-#define NULL_LINES 999
-#define DEFAULT_AMP 1.f
-
 /*!
  *  \class AudioRay
  *
@@ -27,7 +24,7 @@ class AudioRay
 {
   public:
     // NOTE: Repurposing size as posB in line and normal pos and posA
-    AudioRay(Object *parent, const int &line, const float &amp
+    AudioRay(Object *parent, const int &line, const CArray<Vec2> &amp
         , const Vec2 &_posA, const Vec2 &_posB);
     ~AudioRay();
 
@@ -37,14 +34,22 @@ class AudioRay
     Vec2 get_posA() const;
     Vec2 get_posB() const;
 
-    float get_amp() const;
+    const CArray<Vec2> &get_amp() const;
     float get_distance() const;
 
     void set_parent_line(const int &line);
 
     void set_posA(const Vec2 &_posA);
     void set_posB(const Vec2 &_posB);
-    void set_amp(const float &amp);
+    void set_amp(const CArray<Vec2> &amp);
+    void scale_amp(const float &scale);
+    void add_to_amp(const CArray<Vec2> &amp);
+    void scale_to_amp(const CArray<Vec2> &amp, const float &scale);
+    void scale_and_add_to_amp(const CArray<Vec2> &amp, const float &scale);
+    CArray<Vec2> add_amps(const CArray<Vec2> &amp);
+    void inverse_amp();
+
+    float get_amp_average();
 
     void set_color(const sf::Color &color);
 
@@ -55,6 +60,6 @@ class AudioRay
   
     Object *parent;
     int parentLine;
-    float amplitude;
+    CArray<Vec2> coefficents;
     std::array<sf::Vertex, 2> line;
 };

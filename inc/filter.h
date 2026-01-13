@@ -35,7 +35,7 @@ class Filter
 
   public:
     Filter();
-    ~Filter();
+    virtual ~Filter();
 
     virtual void add_coefficent(const COEFFICENT &coefficent);
 
@@ -69,36 +69,51 @@ class BandPass : public Filter
      *  \param _samplingRate
      *    The sampling rate of the filter
      */
-    BandPass(const float &_frequency = 0.f, const float &_quality = 0.f
-        , const float &_samplingRate = 0.f);
+    BandPass(const float &_frequency = 0.f, const float &_quality = 1.f
+        , const float &_samplingRate = 44100.f);
+    BandPass(const BandPass &other);
     ~BandPass();
 
+    BandPass &operator=(const BandPass &other);
+
     void set_quality(const float &_quality);
+    void set_gain(const float &gain);
     void set_frequency(const float &_frequency);
     void set_sampling_rate(const float &_samplingRate);
     void update_values();
+
+    bool is_valid() const;
 
     void apply_filter(CArray<float> &samples) override;
   private:
     float samplingRate;
     float frequency;
     float quality;
-    float a0, b1, b2;
+    float gain;
+    float a0, a1, a2, b0, b1, b2;
 };
 
 class Equalizer : public Filter
 {
   public:
-    Equalizer(const uint8_t &quanity, const float &_samplingRate);
+    Equalizer(const uint8_t &quanity = 1
+        , const float &_samplingRate = 44000
+        , const float &delay = 0.f);
+    Equalizer(const Equalizer &other);
     ~Equalizer();
+
+    Equalizer &operator=(const Equalizer &other);
 
     void calculate_quality(const uint8_t &quanity);
 
-    void add_coefficent(const Filter::COEFFICENT &coefficent) override;
+    void add_coefficent(const float &frequency, const float &coefficent
+        , const size_t &band);
     void apply_filter(CArray<float> &samples) override;
+    void set_delay(const float &delay);
 
   private:
     uint8_t bandMax;
+    float delay;
     float quality;
     float samplingRate;
     CArray<BandPass> bands;

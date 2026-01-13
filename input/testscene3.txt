@@ -12,9 +12,9 @@ Coefficent
   {
     Vec3 = 25, 62, 83
   }
-  DoubleArray[1]
+  Vec2Array[1]
   {
-    Double = 0.9
+    Vec2 = 500, 0.9
   }
 }
 Coefficent
@@ -24,9 +24,9 @@ Coefficent
   {
     Vec3 = 180, 100, 130
   }
-  DoubleArray[1]
+  Vec2Array[1]
   {
-    Double = 0.6
+    Vec2 = 500, 0.6
   }
 }
 Source

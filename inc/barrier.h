@@ -11,6 +11,7 @@
 
 #include <SFML/Graphics/Color.hpp>
 
+#include "helper.h"
 #include "object.h"
 
 /*!
@@ -43,23 +44,12 @@ class Barrier : public Object
       , C_COUNT 
     };
 
-    static inline const float INVALID_COEFFICENT_VALUE = -1.f;
+    // EMPTY CARRAY OF VEC2
+    static inline const CArray<Vec2> INVALID_COEFFICENT_VALUE;
 
-    struct FrequencyCoefficents
+    struct EQCoefficents
     {
-      static inline constexpr uint8_t VALUE_COUNT = 6;
-      struct FreqCoeffValues
-      {
-        uint16_t frequency;
-        float coefficent;
-      } values[6];
-      sf::Color color;
-      std::string name;
-    };
-
-    struct Coefficents 
-    {
-      float coefficent;
+      CArray<Vec2> frequencyCoefficents;
       sf::Color color;
       std::string name;
     };
@@ -72,19 +62,22 @@ class Barrier : public Object
     static void reset_custom_coefficents();
     static COEFFICENTS get_next_free_custom_coefficent();
     static void set_custom_coefficent(const COEFFICENTS &index
-        , const Coefficents &value);
+        , const EQCoefficents &value);
     static COEFFICENTS get_coefficent_index(const std::string &name);
-    static float get_coefficent(const COEFFICENTS &index);
+    static const CArray<Vec2> &get_coefficent(const COEFFICENTS &index);
 
   private:
     COEFFICENTS type;
 
-    static inline Coefficents CoefficentValues[C_COUNT] =
+    static inline EQCoefficents EQCoefficentValues[C_COUNT] =
     {
       // Standard Coefficents
-      {0.1f, sf::Color{186, 140, 99}, "wood"}
-      , {0.05f, sf::Color{255, 192, 203}, "rubber"}
-      , {0.3f, sf::Color{100, 100, 100}, "wall"}
+      {CArray<Vec2>{{125, 0.28f}, {500, 0.17f}, {2000, 0.1f}, {4000, 0.15f}}
+        , sf::Color{186, 140, 99}, "wood"}
+      , {CArray<Vec2>{{125, 0.04}, {500, 0.06}, {2000, 0.1f}, {4000, 0.15}}
+        , sf::Color{255, 192, 203}, "rubber"}
+      , {CArray<Vec2>{{125, 0.18}, {500, 0.04}, {2000, 0.03f}, {4000, 0.02}}
+        , sf::Color{100, 100, 100}, "wall"}
       // Custom Coefficents
       , {INVALID_COEFFICENT_VALUE, sf::Color{0, 0, 0}, ""}
       , {INVALID_COEFFICENT_VALUE, sf::Color{0, 0, 0}, ""}

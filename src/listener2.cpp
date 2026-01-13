@@ -31,7 +31,7 @@ Listener::Listener(const Vec2 &pos, const Vec2  &size, const float &direction
   directionVec.normalize();
 
   set_color(listenerColor);
-  absortionCoefficent = 0.f;
+  absortionCoefficents = CArray<Vec2>{{500.f, 0.f}};
 
   if(pattern == "omni")
   {

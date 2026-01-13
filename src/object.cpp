@@ -32,9 +32,9 @@ std::string Object::get_type_name() const
   return typeName;
 }
 
-float Object::get_absortion_coefficent() const
+const CArray<Vec2> &Object::get_absortion_coefficent() const
 {
-  return absortionCoefficent; 
+  return absortionCoefficents; 
 }
 
 void Object::set_position(const Vec2 &_pos)

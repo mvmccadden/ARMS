@@ -9,6 +9,7 @@
 
 #include "filter.h"
 
+#include <cmath>
 #include <math.h>
 
 #include "helper.h"
@@ -68,17 +69,42 @@ void Filter::apply_filter(CArray<float> &samples)
 BandPass::BandPass(const float &_frequnecy, const float &_quality
     , const float &_samplingRate)
   : samplingRate(_samplingRate), frequency(_frequnecy), quality(_quality) 
-  , a0(0.f), b1(0.f), b2(0.f)
-{ 
+  , gain(1.f) , a0(0.f), b1(0.f), b2(0.f) { }
 
+BandPass::BandPass(const BandPass &other)
+{
+  *this = other;
 }
 
 BandPass::~BandPass() { }
+
+BandPass &BandPass::operator=(const BandPass &other)
+{
+  if(this == &other)
+  {
+    return *this;
+  }
+
+  samplingRate = other.samplingRate;
+  frequency = other.frequency;
+  gain = other.gain;
+  quality = other.quality;
+  a0 = other.a0;
+  b1 = other.b1;
+  b2 = other.b2;
+
+  return *this;
+}
 
 void BandPass::set_quality(const float &_quality)
 {
   quality = _quality;
   update_values();
+}
+
+void BandPass::set_gain(const float &_gain)
+{
+  gain = _gain;
 }
 
 void BandPass::set_frequency(const float &_frequency)
@@ -95,28 +121,65 @@ void BandPass::set_sampling_rate(const float &_samplingRate)
 
 void BandPass::update_values()
 {
+  if(samplingRate == 0 || std::isnan(samplingRate))
+  {
+    samplingRate = 44100;
+  }
+
   const float PI = 4.f * atan(1);
-  float t = tan(PI * frequency * samplingRate);
-  float tt = t * t;
-  float optt = 1 + tt;
-  float factor = 1.f/(quality*optt*t);
-  a0 = factor * t;
-  b1 = factor * 2.f * quality * (1 - tt);
-  b2 = factor * (t - quality * optt);
+  float omega = 2.f * PI * frequency / samplingRate;
+  float sinOmega = sin(omega);
+  float cosOmega = cos(omega);
+  float alpha = sinOmega / (2.f * quality);
+
+  b0 = alpha;
+  b1 = 0;
+  b2 = -alpha;
+  a0 = 1 + alpha;
+  a1 = -2 * cosOmega;
+  a2 = 1 - alpha;
+
+  // Normalizing all to a0
+  b0 /= a0;
+  b1 /= a0;
+  b2 /= a0;
+  a1 /= a0;
+  a2 /= a0;
 }
 
+bool BandPass::is_valid() const
+{
+  if(frequency == 0 || samplingRate == 0)
+  {
+    return false;
+  }
+
+  return true;
+}
+
+// Biquad band-pass filter
 void BandPass::apply_filter(CArray<float> &samples)
 {
+  if(samplingRate == 0)
+  {
+    return;
+  }
+
+  update_values();
+
   float x = 0.f, y = 0.f, x1 = 0.f, y1 = 0.f, x2 = 0.f, y2 = 0.f;
   for(size_t i = 0; i < samples.size(); ++i)
   {
     x = samples[i];
-    y = a0 * (x - x2) + b1 * y1 + b2 * y2;
+
+    y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+
     x2 = x1;
     x1 = x;
     y2 = y1;
     y1 = y;
-    samples[i] = y;
+
+    samples[i] = y * gain;
   }
 }
 
@@ -124,14 +187,40 @@ void BandPass::apply_filter(CArray<float> &samples)
 // Equalizer //
 //===========//
 
-Equalizer::Equalizer(const uint8_t &quanity, const float &_samplingRate)
-  : bandMax(quanity), quality(0.f), samplingRate(_samplingRate) 
+Equalizer::Equalizer(const uint8_t &quanity, const float &_samplingRate
+    , const float &_delay)
+  : bandMax(quanity), quality(0.f), delay(_delay), samplingRate(_samplingRate) 
 {
-  bands.resize(quanity);
   calculate_quality(quanity);
 }
 
+Equalizer::Equalizer(const Equalizer &other)
+{
+  *this = other;
+}
+
 Equalizer::~Equalizer() { }
+
+Equalizer &Equalizer::operator=(const Equalizer &other)
+{
+  if(this == &other)
+  {
+    return *this;
+  }
+
+  bandMax = other.bandMax;
+  delay = other.delay;
+  quality = other.quality;
+  samplingRate = other.samplingRate;
+
+  bands.resize(other.bands.size());
+  for(size_t i = 0; i < other.bands.size(); ++i)
+  {
+    bands[i] = other.bands.at(i);
+  }
+
+  return *this;
+}
 
 void Equalizer::calculate_quality(const uint8_t &quanity)
 {
@@ -140,34 +229,50 @@ void Equalizer::calculate_quality(const uint8_t &quanity)
   quality = pow(10.f, delta / 2.f) / (pow(10.f, delta) - 1);
 }
 
-void Equalizer::add_coefficent(const Filter::COEFFICENT &coefficent)
+void Equalizer::add_coefficent(const float &frequency, const float &coefficent
+        , const size_t &band)
 {
-  if(coefficent.band > bandMax)
+  if(band >= bandMax)
   {
-    calculate_quality(coefficent.band);
+    calculate_quality(band);
 
     for(size_t i = 0; i < bands.size(); ++i)
     {
       bands[i].set_quality(quality);
     }
 
-    bands.resize(coefficent.band);
+    bands.resize(band);
   }
   
-  bands[coefficent.band].set_quality(quality);
-  bands[coefficent.band].set_frequency(coefficent.frequency);
-  bands[coefficent.band].set_sampling_rate(samplingRate);
+  bands[band].set_quality(quality);
+  bands[band].set_frequency(frequency);
+  bands[band].set_gain(coefficent);
+  bands[band].set_sampling_rate(samplingRate);
 }
 
 void Equalizer::apply_filter(CArray<float> &samples)
 {
   // Apply filter of all bands 
   CArray<float> returnArray;
+  returnArray.resize(samples.size() + static_cast<size_t>(delay));
+  for(size_t i = 0; i < returnArray.size(); ++i)
+  {
+    returnArray[i] = 0.f;
+  }
+
   for(size_t i = 0; i < bands.size(); ++i)
   {
     CArray<float> output(samples);
+    // 0Hz bands are left to help normalize audio and removed unwanted
+    // distortion
     bands[i].apply_filter(output);
-    returnArray += output;
+
+    // Apply delay
+    // TODO: May need to look at this :)
+    for(size_t j = 0; j < output.size(); ++j)
+    {
+      returnArray[j+static_cast<size_t>(delay)] += output[j];
+    }
   }
   // Override with new output based on input
   samples = returnArray;

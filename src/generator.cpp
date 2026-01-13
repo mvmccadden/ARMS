@@ -23,6 +23,9 @@
 
 using namespace std;
 
+const size_t NULL_LINES = 99;
+const CArray<Vec2> DEFAULT_AMP;
+
 struct ListenerData
 {
   string pattern;
@@ -137,9 +140,9 @@ SourceData get_source_data(DataMap::DataMapIterator it)
   return data;
 }
 
-Barrier::Coefficents create_custom_coefficents(DataMap::DataMapIterator it)
+Barrier::EQCoefficents create_custom_coefficents(DataMap::DataMapIterator it)
 {
-  Barrier::Coefficents coefficent = {Barrier::INVALID_COEFFICENT_VALUE
+  Barrier::EQCoefficents coefficent = {Barrier::INVALID_COEFFICENT_VALUE
     , sf::Color(0, 0, 0), ""};
 
   for(DataMap::DataMapIterator childIt = (*it)->get_children_begin()
@@ -148,13 +151,15 @@ Barrier::Coefficents create_custom_coefficents(DataMap::DataMapIterator it)
     // TODO: Make this handle actual array values
     if((*childIt)->get_name() == "Array")
     {
-      CQueue<float> *queue = (*childIt)->get_casted_data<CQueue<float>>();
+      CQueue<Vec2> *queue = (*childIt)->get_casted_data<CQueue<Vec2>>();
       for(size_t i = 0 ; i < queue->size(); ++i)
       {
-        coefficent.coefficent = queue->pop();
+        coefficent.frequencyCoefficents[i] = queue->pop();
+        Logger(Logger::L_WRN, "Custom coefficent value " 
+            + to_string(coefficent.frequencyCoefficents[i].x)
+            + " read as: " 
+            + to_string(coefficent.frequencyCoefficents[i].y));
       }
-      Logger(Logger::L_WRN, "Custom coefficent value read as: " 
-          + to_string(coefficent.coefficent));
     }
     else if((*childIt)->get_name() == "Color")
     {
@@ -167,8 +172,7 @@ Barrier::Coefficents create_custom_coefficents(DataMap::DataMapIterator it)
   static_cast<void>(Logger(Logger::L_WRN, "Custom coefficent name read as: " 
         + coefficent.name));
 
-  if(coefficent.coefficent == Barrier::INVALID_COEFFICENT_VALUE 
-      || coefficent.name == "")
+  if(coefficent.name == "")
   {
     Logger(Logger::L_WRN, "Custom coefficent was created with invalid data");
   }
@@ -341,9 +345,14 @@ const CollisionInfo detect_collisions(vector<Object *> &objVec
       static_cast<void>(Logger(Logger::L_MSG, "Listener Hit!"));
       float gain = dynamic_cast<Listener*>(info.parent)->get_directional_gain(
           {rayBegin.x - newRayEnd.x, rayBegin.y - newRayEnd.y});
-      ray->set_amp(ray->get_amp() * gain);
-      static_cast<void>(Logger(Logger::L_MSG, "Listener gain: " 
-            + to_string(ray->get_amp())));
+      ray->scale_amp(gain);
+      for(size_t i = 0; i < ray->get_amp().size(); ++i)
+      {
+        Logger(Logger::L_MSG, "Listener gain " 
+              + to_string(ray->get_amp().at(i).x)
+              + "Hz: " 
+              + to_string(ray->get_amp().at(i).y));
+      }
       break;
     }
   }
@@ -368,7 +377,7 @@ AudioRay *resolve_collision(AudioRay *ray, const CollisionInfo &info
 {
   Vec2 posA = ray->get_posA();
   Vec2 posB = ray->get_posB();
-  float amp = ray->get_amp() * (1.f - info.parent->get_absortion_coefficent());
+  CArray<Vec2> amp = ray->add_amps(info.parent->get_absortion_coefficent());
 
   Vec2 incidentVec = posB - posA;
 
@@ -441,17 +450,19 @@ vector<vector<AudioRay *>> generate_inital_audio_rays(Object *parent
  *    A vector of objects with absorbtion factor
  *
  *  \returns
- *    The T60 time in seconds
+ *    The T60 time in seconds for each band
  */
-float calculate_t60_time(vector<Object *> &objVec)
+CArray<Vec2> calculate_t60_time(vector<Object *> &objVec)
 {
-  float absorbtionAverage = 0.f;
   float absorbtionSurfaceArea = 0.f;
   float roomVolume = 0.f;
+  // Using an audio ray to track absorbtion as it has all the built in
+  // functionality needed
+  AudioRay absorbtionRay(nullptr, 0, DEFAULT_AMP, {0.f, 0.f}, {0.f, 0.f});
 
   for(Object *obj : objVec)
   {
-    absorbtionAverage += (1.f - obj->get_absortion_coefficent());
+    absorbtionRay.add_amps(obj->get_absortion_coefficent());
 
     Vec2 size = obj->get_size();
     if(obj->get_type_name() == "Barrier")
@@ -466,23 +477,35 @@ float calculate_t60_time(vector<Object *> &objVec)
       absorbtionSurfaceArea += size.h * 2.f;
     }
   }
-
+  
+  /*
   static_cast<void>(Logger(Logger::L_MSG, "Absorbtion Average: " 
       + to_string(absorbtionAverage)));
+  */
   static_cast<void>(Logger(Logger::L_MSG, "Absorbtion Surface Area: " 
       + to_string(absorbtionSurfaceArea)));
   static_cast<void>(Logger(Logger::L_MSG, "Room Volume: " 
       + to_string(roomVolume)));
-  return (0.161f * roomVolume) / (absorbtionSurfaceArea * absorbtionAverage);
+  CArray<Vec2> returnVec(absorbtionRay.get_amp());
+  for(size_t i = 0; i < returnVec.size(); ++i)
+  {
+    returnVec[i].y = (0.161f * roomVolume) 
+      / (absorbtionSurfaceArea * returnVec[i].y);
+  }
+  return returnVec;
 }
 
+/*!
+ *  Calculates the average peak amplitude of each ray to find the average amount
+ *  of gain that the listener recieves
+ */
 float calculate_listener_peak_amplitude(vector<vector<AudioRay *>> &raySet)
 {
   float attenuation = 0.f;
 
   for(vector<AudioRay *> &rays : raySet)
   {
-    attenuation += rays.back()->get_amp();
+    attenuation += rays.back()->get_amp_average();
   }
 
   return attenuation;
@@ -533,7 +556,10 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
   {
     // First check for the inital collision
     AudioRay *ray = _rayVec.front();
-    float amp = map_range_to(ray->get_amp(), 0.f, 1.f, 60.f, 160.f);
+    float amp = map_range_to(ray->get_amp_average(), 0.f, 1.f, 60.f, 160.f);
+    /*
+    Logger(Logger::L_ERR, "Average AMP: " + to_string(ray->get_amp_average()));
+    */
     ray->set_color(sf::Color(0.f, amp, 0.f, amp));
     CollisionInfo collisionInfo = detect_collisions(objVec, ray); 
     // Then loop until either the collision max is hit meaning we probably 
@@ -543,23 +569,25 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
           && !(collisionInfo.parent->get_type_name() == "Listener")); ++i)
     {
       AudioRay *newRay = resolve_collision(ray, collisionInfo, scalar);
-      amp = map_range_to(newRay->get_amp(), 0.f, 1.f, 60.f, 160.f);
+      amp = map_range_to(newRay->get_amp_average(), 0.f, 1.f, 60.f, 160.f);
       newRay->set_color(sf::Color(0.f, amp, 0.f, amp));
       ray = newRay;
       _rayVec.push_back(ray);
       collisionInfo = detect_collisions(objVec, ray);
     }
 
-    if(_rayVec.back()->get_amp() < 0.f || _rayVec.back()->get_amp() > 1.f)
+    if(_rayVec.back()->get_amp_average() < 0.f || _rayVec.back()->get_amp_average() > 1.f)
     {
       Logger(Logger::L_ERR, "INVALID VEC AMP");
     }
 
     // TODO: Instead of adding to a new vec on successful hit lets remove from
     // vec
-    if(collisionInfo.parent && _rayVec.back()->get_amp() > 0.f
+    if(collisionInfo.parent && _rayVec.back()->get_amp_average() > 0.f
         && collisionInfo.parent->get_type_name() == "Listener")
     {
+
+      Logger(Logger::L_ERR, "PUSHING BACK VEC AMP");
       returnVec.push_back(_rayVec);
     }
     else 
@@ -594,7 +622,7 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
       smallestVecSize.index = i;
       smallestVecSize.size = returnVec[i].size();
     }
-    float amp = returnVec[i].back()->get_amp();
+    float amp = returnVec[i].back()->get_amp_average();
     if(loudestRay.amp < amp)
     {
       loudestRay.amp = amp;
@@ -608,7 +636,7 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
   {
     for(AudioRay *ray : returnVec[loudestRay.index])
     {
-      float amp = map_range_to(ray->get_amp(), 0.f, 1.f, 130.f, 230.f);
+      float amp = map_range_to(ray->get_amp_average(), 0.f, 1.f, 130.f, 230.f);
       ray->set_color(sf::Color(amp, 0.f, amp, amp)); 
     }
   }
@@ -617,32 +645,23 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
     // Loudest Ray
     for(AudioRay *ray : returnVec[loudestRay.index])
     {
-      float amp = map_range_to(ray->get_amp(), 0.f, 1.f, 130.f, 230.f);
+      float amp = map_range_to(ray->get_amp_average(), 0.f, 1.f, 130.f, 230.f);
       ray->set_color(sf::Color(amp, amp, 0.f, amp)); 
     }
   
     // Smallest Ray
     for(AudioRay *ray : returnVec[smallestVecSize.index])
     {
-      float amp = map_range_to(ray->get_amp(), 0.f, 1.f, 130.f, 230.f);
+      float amp = map_range_to(ray->get_amp_average(), 0.f, 1.f, 130.f, 230.f);
       ray->set_color(sf::Color(0.f, amp, amp, amp)); 
     }
   }
 
-  // Find the average size for logging purposes
-  float averageSize = static_cast<float>(totalSizes) 
-    / static_cast<float>(returnVec.size());
-
-  float t60Time = calculate_t60_time(objVec);
+  static_cast<void>(Logger(Logger::L_MSG
+        , "Number of rays that hit the listener: " 
+        + to_string(returnVec.size())));
 
   listenerAmp = calculate_listener_peak_amplitude(returnVec);
-
-  static_cast<void>(Logger(Logger::L_MSG, "Calculate T60 time: " 
-      + to_string(t60Time)));
-  static_cast<void>(Logger(Logger::L_MSG, "Average size of the Audio Rays: " 
-      + to_string(averageSize)));
-  static_cast<void>(Logger(Logger::L_MSG
-        , "Peak amplitude recieved at listener: " + to_string(listenerAmp)));
 
   // Remove the added wall since we don't need to draw it
   objVec.pop_back();

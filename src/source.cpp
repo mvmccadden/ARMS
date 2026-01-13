@@ -15,7 +15,7 @@ Source::Source(const Vec2 &pos, const Vec2 &size, const float &_direction
     , checks(_checks), rays(_rays)
 {
   set_color(sourceColor);
-  absortionCoefficent = 0.f;
+  absortionCoefficents = CArray<Vec2>{{500.f, 0.f}};
 }
 
 Source::~Source() { }

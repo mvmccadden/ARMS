@@ -21,17 +21,25 @@ Barrier::Barrier(const Vec2 &pos, const Vec2 &size, const string &_type)
 
   for(size_t i = 0; i < C_COUNT; ++i)
   {
-    if(_type == CoefficentValues[i].name)
+    if(_type == EQCoefficentValues[i].name)
     {
-      set_color(CoefficentValues[i].color);
-      absortionCoefficent = CoefficentValues[i].coefficent;
+      set_color(EQCoefficentValues[i].color);
+      for(size_t j = 0; j < EQCoefficentValues[i].frequencyCoefficents.size();
+          ++j)
+      {
+        absortionCoefficents[j] = EQCoefficentValues[i].frequencyCoefficents[j];
+        Logger(Logger::L_WRN
+            , "Absorbtion Coefficent " 
+            + to_string(absortionCoefficents[j].x) 
+            + ": " + to_string(absortionCoefficents[j].y));
+      }
       type = static_cast<COEFFICENTS>(i);
       return;
     }
   }
   
   set_color(sf::Color::Black);
-  absortionCoefficent = -1.f;
+  absortionCoefficents = INVALID_COEFFICENT_VALUE;
   type = C_COUNT;
 }
 
@@ -46,9 +54,9 @@ void Barrier::reset_custom_coefficents()
 {
   for(size_t i = C_CUSTOM0; i < C_COUNT; ++i)
   {
-    CoefficentValues[i].coefficent = -1.f;
-    CoefficentValues[i].name = "";
-    CoefficentValues[i].color = sf::Color::Black;
+    EQCoefficentValues[i].frequencyCoefficents = INVALID_COEFFICENT_VALUE;
+    EQCoefficentValues[i].name = "";
+    EQCoefficentValues[i].color = sf::Color::Black;
   }
 }
 
@@ -56,7 +64,9 @@ Barrier::COEFFICENTS Barrier::get_next_free_custom_coefficent()
 {
   for(size_t i = C_CUSTOM0; i < C_COUNT; ++i)
   {
-    if(CoefficentValues[i].coefficent == INVALID_COEFFICENT_VALUE)
+    // INVALID COEFFICENT VALUE is an empty CArray<Vec2>
+    // It also has no name
+    if(EQCoefficentValues[i].name == "")
     {
       static_cast<void>(Logger(Logger::L_MSG
             , "Found next free custom coefficent"));
@@ -68,7 +78,7 @@ Barrier::COEFFICENTS Barrier::get_next_free_custom_coefficent()
 }
 
 void Barrier::set_custom_coefficent(const COEFFICENTS &index
-    , const Coefficents &value)
+    , const EQCoefficents &value)
 {
   if(index == C_COUNT)
   {
@@ -77,16 +87,16 @@ void Barrier::set_custom_coefficent(const COEFFICENTS &index
     return;
   }
 
-  CoefficentValues[index].name = value.name;
-  CoefficentValues[index].coefficent = value.coefficent;
-  CoefficentValues[index].color = value.color;
+  EQCoefficentValues[index].name = value.name;
+  EQCoefficentValues[index].color = value.color;
+  EQCoefficentValues[index].frequencyCoefficents = value.frequencyCoefficents;
 }
 
 Barrier::COEFFICENTS Barrier::get_coefficent_index(const string &name)
 {
   for(size_t i = 0; i < C_COUNT; ++i)
   {
-    if(CoefficentValues[i].name == name)
+    if(EQCoefficentValues[i].name == name)
     {
       return static_cast<COEFFICENTS>(i);
     }
@@ -95,7 +105,7 @@ Barrier::COEFFICENTS Barrier::get_coefficent_index(const string &name)
   return C_COUNT;
 }
 
-float Barrier::get_coefficent(const COEFFICENTS &index)
+const CArray<Vec2> &Barrier::get_coefficent(const COEFFICENTS &index)
 {
   if(index == C_COUNT)
   {
@@ -105,5 +115,5 @@ float Barrier::get_coefficent(const COEFFICENTS &index)
     return INVALID_COEFFICENT_VALUE;
   }
 
-  return CoefficentValues[index].coefficent;
+  return EQCoefficentValues[index].frequencyCoefficents;
 }
