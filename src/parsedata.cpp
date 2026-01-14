@@ -157,7 +157,7 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
     {
       dataMap = dataMap->add_child(new DataMap("Pattern", dataMap));
     }
-    else if(line.find("Coefficent") != string::npos)
+    else if(line.find("Material") != string::npos)
     {
       dataMap = dataMap->add_child(new DataMap("Coefficent", dataMap));
     }

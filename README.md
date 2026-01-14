@@ -3,25 +3,98 @@
 A simple acoustic room model built on SFML that uses physically modeled rays 
 to demonstrate how rooms attenuate sound.
 
+## Features
+
+- Wav file I/O
+- Physical ray modeled reverberance 
+- Sabine Formula modeled reverberance
+- Custom Scripting System
+    - Source
+        - Custom ray distribtion
+    - Listener
+        - Polar patterns
+    - Barriers
+    - Custom materials
+    - Custom room sizes
+
+## Getting Started
+
+### Installation
+
+#### Linux
+
+1. Clone the repo
+2. Install dependencies: *cmake*, *gcc*, *g++*
+3. From the projects root directory run the following commands to build
+    1. Create a new build directory `cmake -B [build directory]`
+    2. Create a new build within the directory `cmake --build [build directory]`
+4. Run the build `./[build directory]/bin/arms`
+
+### Running Your First Simulation 
+
+1. Press **Select Scene** and select one of the provided test scenes in *input/*
+2. Press **Select Wave** and select one of the provided sample .wav files in
+   *input/*
+3. Generate output with either **Generate Ray Output** or **Generate Sabine
+   Output** and save it where you like!
+
+#### Next?
+
+- Try comparing the outputs with each other and input!
+- Try using your own .wav files!
+- Try creating your own custom rooms!
+- Try to simulate a recording setup or even a couple to see what gets the best
+  sound!
+- Contact me with feature requests and any bugs!
+- Have fun!
+
 ## Scripting Guide
 
-### Info
+### Room
 
-A container for the simulations base settings include the following parameters.
+An *optional* container defining the room size of a scene in cm. 
+The room size will default to 1000cm X 1000cm if this container is not defined 
+in your scene.
 
-- raycount (the number of rays being sent from the source)
-- maxchecks (the number of bounces a ray can have before it is considered 'dead')
-- conesize (the size of the cone the rays are being cast from, from the source)
-- direction (the direciton of the cone that will case the rays, from the source)
+**Example**
+```
+Room
+{
+    Size
+    {
+        Vec2 = 500, 500
+    }
+}
+```
 
-#### Coefficent
+### Material 
 
-A sub-container within **Info** that can be used to create custom barrier
-types.
+An *optional* container defining a custom material that can be applied to any
+barrier in a given scene.
 
-- Name (the name of the material)
-- Factor (the coefficent absortion factor)
-- Color (the color of the material that will be used to visualize it on screen)
+#### Options
+- Material Name -> a String
+- Material Color -> a Color
+- Material Coefficents -> a Vec2Array containing [frequency, absorbtion factor]
+
+**Example**
+```
+Material
+{
+    String = Tile
+    Color
+    {
+        Vec3 = 220, 220, 255
+    }
+    Vec2Array[4]
+    {
+        Vec2 = 125, 0.5
+        Vec2 = 500, 0.3
+        Vec2 = 1000, 0.1
+        Vec2 = 2000, 0.2
+    }
+}
+```
 
 ### Source 
 
@@ -56,4 +129,7 @@ within the room and what acoustic properties it holds
 - Wood
 - Rubber
 - Wall
+
+## Known Issues 
+- Some Wave files may not work due to how their are internally formatted 
 

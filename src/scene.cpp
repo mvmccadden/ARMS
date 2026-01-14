@@ -290,10 +290,12 @@ void Scene::generate_scene_filter()
   for(vector<AudioRay *> &audioRays : audioRayVec)
   {
     float distance = 0.f;
+    float scalar = (relativeScalar.x > relativeScalar.y) 
+      ? relativeScalar.x : relativeScalar.y;
     // NOTE: each pixel is assumed to be a centimeter in this simulation atm
     for(AudioRay *audioRay : audioRays)
     { 
-      distance += audioRay->get_distance();
+      distance += audioRay->get_distance() / scalar;
     }
     unsigned delay = distance / 34300.f * currentSamplingRate;
 

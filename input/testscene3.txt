@@ -5,7 +5,7 @@ Room
     Vec2 = 500, 500
   }
 }
-Coefficent
+Material
 {
   String = Cloth
   Color 
@@ -17,7 +17,7 @@ Coefficent
     Vec2 = 500, 0.9
   }
 }
-Coefficent
+Material
 {
   String = Cardboard
   Color

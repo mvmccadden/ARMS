@@ -167,7 +167,7 @@ int main()
   /*
    *  Button for generating an output.wav based on room and input.wav
    */
-  ui.push_back(new Button("Generate Room Output"
+  ui.push_back(new Button("Generate Ray Output"
       , {buttonContainerItemStart.x
         , buttonContainerItemStart.y 
           + 2 * buttonContainerYItemOffset + 2 * buttonContainerYSectionOffset}
@@ -205,7 +205,7 @@ int main()
 
           if(outPath) free(outPath);
         }));
-  ui.push_back(new Button("Generate T60 Output"
+  ui.push_back(new Button("Generate Sabine Output"
       , {buttonContainerItemStart.x
         , buttonContainerItemStart.y 
           + 3 * buttonContainerYItemOffset + 2 * buttonContainerYSectionOffset}
