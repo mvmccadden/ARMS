@@ -165,7 +165,9 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
     {
       dataMap = dataMap->add_child(new DataMap("Array", dataMap));
       // Create a C-style array of a user defined number of digits
-      int size = get_int_from_line(line, line.find("Array[") + sizeof("Array["));
+      int size = get_int_from_line(line, line.find("Array["));
+      static_cast<void>(Logger(Logger::L_MSG, "Creating array of size: " 
+            + to_string(size)));
       // Detects if a char was included to denote type of array objects, default
       // is "I" or int
       if(line.find("Double"))
@@ -179,6 +181,10 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
       else if(line.find("Vec2"))
       {
         dataMap->set_data(new CQueue<Vec2>(size));
+      }
+      else if(line.find("Vec3"))
+      {
+        dataMap->set_data(new CQueue<Vec3>(size));
       }
       else
       {
@@ -330,8 +336,17 @@ DataMap *read_scene_file(string fileName, const bool &ignoreInputDir)
         }
       }
 
-      dataMap->set_data<Vec3>(new Vec3(static_cast<float>(digits[0])
-            , static_cast<float>(digits[1]), static_cast<float>(digits[2])));
+      if(dataMap->get_name() == "Array")
+      {
+        dataMap->get_casted_data<CQueue<Vec3>>()->push(
+            Vec3(static_cast<float>(digits[0]), static_cast<float>(digits[1])
+              , static_cast<float>(digits[2])));
+      }
+      else
+      {
+        dataMap->set_data<Vec3>(new Vec3(static_cast<float>(digits[0])
+              , static_cast<float>(digits[1]), static_cast<float>(digits[2])));
+      }
     }
   }
 

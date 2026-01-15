@@ -286,6 +286,9 @@ void Scene::generate_scene_filter()
 {
   filters.clear();
 
+  // Resize the filter to match the size of the number of AudioRays
+  filters.resize(audioRayVec.size());
+
   size_t i = 0;
   for(vector<AudioRay *> &audioRays : audioRayVec)
   {
@@ -310,7 +313,7 @@ void Scene::generate_scene_filter()
           , static_cast<unsigned>(j));
     }
 
-    ++i;;
+    ++i;
   }
 }
 

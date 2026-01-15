@@ -59,6 +59,8 @@ class LowPass : public Filter
 class BandPass : public Filter
 {
   public:
+    // NOTE: SamplingRate defaults to 0 so that we can detect when invalid
+    // BandPass are created
     /*!
      *  Default ctor for the BandPass filter
      *
@@ -70,7 +72,7 @@ class BandPass : public Filter
      *    The sampling rate of the filter
      */
     BandPass(const float &_frequency = 0.f, const float &_quality = 1.f
-        , const float &_samplingRate = 44100.f);
+        , const float &_samplingRate = 0.f);
     BandPass(const BandPass &other);
     ~BandPass();
 
@@ -84,6 +86,8 @@ class BandPass : public Filter
 
     bool is_valid() const;
 
+    const float &get_sampling_rate() const;
+
     void apply_filter(CArray<float> &samples) override;
   private:
     float samplingRate;
@@ -96,8 +100,10 @@ class BandPass : public Filter
 class Equalizer : public Filter
 {
   public:
+    // NOTE: SamplingRate defaults to 0 so that we can detect when invalid
+    // Equalizers are created
     Equalizer(const uint8_t &quanity = 1
-        , const float &_samplingRate = 44000
+        , const float &_samplingRate = 0.
         , const float &delay = 0.f);
     Equalizer(const Equalizer &other);
     ~Equalizer();

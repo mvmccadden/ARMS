@@ -44,7 +44,7 @@ struct Vec2
 
 struct Vec3
 {
-  Vec3(float _x, float _y, float _z);
+  Vec3(float _x = 0, float _y = 0, float _z = 0);
 
   union
   {

@@ -24,11 +24,15 @@ Barrier::Barrier(const Vec2 &pos, const Vec2 &size, const string &_type)
     if(_type == EQCoefficentValues[i].name)
     {
       set_color(EQCoefficentValues[i].color);
+      // Resize so that extra indicies arn't made
+      absortionCoefficents.resize(
+          EQCoefficentValues[i].frequencyCoefficents.size());
+      // Populate the indicies
       for(size_t j = 0; j < EQCoefficentValues[i].frequencyCoefficents.size();
           ++j)
       {
         absortionCoefficents[j] = EQCoefficentValues[i].frequencyCoefficents[j];
-        Logger(Logger::L_WRN
+        Logger(Logger::L_MSG
             , "Absorbtion Coefficent " 
             + to_string(absortionCoefficents[j].x) 
             + ": " + to_string(absortionCoefficents[j].y));

@@ -9,13 +9,12 @@
 
 #pragma once
 
-#include <algorithm>
 #include <cstddef>
-#include <exception>
 #include <iostream>
 #include <string>
-#include <sstream>
 #include <memory.h>
+
+#include "arms_math.h"
 
 class Logger
 {
@@ -120,7 +119,7 @@ class CArray
     {
       if(count != other.count)
       {
-        static_cast<void>(Logger(Logger::L_MSG
+        static_cast<void>(Logger(Logger::L_WRN
               , "CArray sizes do not match for += operation"));
 
         if(count < other.count)

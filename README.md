@@ -50,6 +50,19 @@ to demonstrate how rooms attenuate sound.
 
 ## Scripting Guide
 
+### Standard Types
+
+- Int
+- Double
+- String
+- Vec2 (double)
+- Vec3 (int)
+- Array
+    - IntArray
+    - DoubleArray
+    - StringArray
+    - Vec2Array
+
 ### Room
 
 An *optional* container defining the room size of a scene in cm. 
@@ -74,7 +87,7 @@ barrier in a given scene.
 
 #### Options
 - Material Name -> a String
-- Material Color -> a Color
+- Material Color -> a Vec3 
 - Material Coefficents -> a Vec2Array containing [frequency, absorbtion factor]
 
 **Example**
@@ -98,37 +111,132 @@ Material
 
 ### Source 
 
-A container that defines where the audio source will be located
+A *required* container that defines where the audio source will be located and
+how rays will disperse from it.
 
-- Position (a sub-container containing a Vec2 with its **2D position**)
-- Size (a sub-container containing a Vec2 with its **2D Size**)
+#### Options
+
+- Source **Position** -> a Vec2
+- Source **Size** -> a Vec2
+- Source **Direction** -> an Int
+    - The direction the "Source Speaker" will point
+- Source **Cone** -> an Int
+    - The cone in which the "Source Speaker" will shoot out its inital rays
+- Number of Ray **Checks** -> an Int
+    - Number of times a ray can bounce before it is considered "dead"
+- Number of **Rays** -> an Int
+    - The number of rays that will be evenly dispersed within the source cone
+
+**Example**
+```
+Source
+{
+  Position
+  {
+    Vec2 = 100, 100
+  }
+  Size
+  {
+    Vec2 = 30, 30
+  }
+  Direction
+  {
+    Int = 270
+  }
+  Cone
+  {
+    Int = 30
+  }
+  Checks
+  {
+    Int = 8
+  }
+  Rays
+  {
+    Int = 50
+  }
+}
+```
 
 ### Listener 
 
-A container that defines where the audio listenr will be located
+A *required* container that defines where the audio listener will be located and
+what type of polar pattern it will use.
 
-- Position (a sub-container containing a Vec2 with its **2D Position**)
-- Size (a sub-container containing a Vec2 with its **2D Size**)
-- Direction (a sub-container containing an Int with its **Polar Angle**)
-- Pattern (a sub-container containing a String with its **Polar Pattern**)
+#### Options
 
-####
+- Listener **Postion** -> a Vec2
+- Listener **Size** -> a Vec2
+- Listener **Direction** -> an Int
+    - The "forward" direction of the polar pattern (defaults to 0)
+- Listener **Polar Pattern** -> a String
+    - The polar pattern the Listener or Microphone will use to capture sound
+      (defaults to Omni)
+
+##### Polar Patterns
+
+- Omni ("Omni")
+- SubCardioid ("Sub")
+- Cardioid ("Cardioid")
+- SuperCardioid ("Super")
+- HyperCardioid ("Hyper")
+- BiDirectional ("Bi")
+
+**Example**
+```
+Listener
+{
+  Position
+  {
+    Vec2 = 300, 300
+  }
+  Size
+  {
+    Vec2 = 30, 30
+  }
+  Direction
+  {
+    Int = 90
+  }
+  Pattern
+  {
+    String = Hyper
+  }
+}
+```
 
 ### Barrier
 
-A container that defines where a object that can block audio waves is located
-within the room and what acoustic properties it holds
+An *optional* container that defines where a object that can block audio 
+is located within the room and what acoustic properties it holds
 
-- Type (a **Default** or **Custom material** that this barrier will inherit 
-  properties of)
-- Position (a sub-container containing a Vec2 with its **2D position**)
-- Size (a sub-container containing a Vec2 with its **2D size**)
+#### Options
 
-#### Default Material
+- Barrier **Material** -> a String
+- Barrier Position -> a Vec2
+- Barrier Size -> a Vec2
+
+##### Default Materials
 
 - Wood
 - Rubber
 - Wall
+
+**Example**
+```
+Barrier
+{
+  String = Cloth
+  Position
+  {
+    Vec2 = 200, 250
+  }
+  Size
+  {
+    Vec2 = 50, 100
+  }
+}
+```
 
 ## Known Issues 
 - Some Wave files may not work due to how their are internally formatted 

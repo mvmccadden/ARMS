@@ -157,11 +157,17 @@ bool BandPass::is_valid() const
   return true;
 }
 
+const float &BandPass::get_sampling_rate() const
+{
+  return samplingRate;
+}
+
 // Biquad band-pass filter
 void BandPass::apply_filter(CArray<float> &samples)
 {
   if(samplingRate == 0)
   {
+    static_cast<void>(Logger(Logger::L_ERR, "Invalid sampling rate of: 0"));
     return;
   }
 
@@ -191,6 +197,7 @@ Equalizer::Equalizer(const uint8_t &quanity, const float &_samplingRate
     , const float &_delay)
   : bandMax(quanity), quality(0.f), delay(_delay), samplingRate(_samplingRate) 
 {
+  bands.resize(quanity);
   calculate_quality(quanity);
 }
 
@@ -232,6 +239,8 @@ void Equalizer::calculate_quality(const uint8_t &quanity)
 void Equalizer::add_coefficent(const float &frequency, const float &coefficent
         , const size_t &band)
 {
+  // NOTE: This should never occur if Equalizer is sized properly on
+  // construction
   if(band >= bandMax)
   {
     calculate_quality(band);
@@ -252,6 +261,18 @@ void Equalizer::add_coefficent(const float &frequency, const float &coefficent
 
 void Equalizer::apply_filter(CArray<float> &samples)
 {
+  // Check bands for invalid bands
+  /*
+  for(size_t i = 0; i < bands.size(); ++i)
+  {
+    if(bands[i].get_sampling_rate() == 0)
+    {
+      Logger(Logger::L_ERR, "Invalid band found in Equalizer at index: " 
+          + to_string(i));
+    }
+  }
+  */
+
   // Apply filter of all bands 
   CArray<float> returnArray;
   returnArray.resize(samples.size() + static_cast<size_t>(delay));

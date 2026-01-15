@@ -151,8 +151,14 @@ Barrier::EQCoefficents create_custom_coefficents(DataMap::DataMapIterator it)
     // TODO: Make this handle actual array values
     if((*childIt)->get_name() == "Array")
     {
+      // Get the custom coefficents
       CQueue<Vec2> *queue = (*childIt)->get_casted_data<CQueue<Vec2>>();
-      for(size_t i = 0 ; i < queue->size(); ++i)
+      // queueSize is gotten before looping to ensure it isn't updated in loop
+      // every iteration and in turn causes the loop to iterate to few times
+      size_t queueSize = queue->size();
+      // Resize the coefficent array to match the queue size
+      coefficent.frequencyCoefficents.resize(queueSize);
+      for(size_t i = 0 ; i < queueSize; ++i)
       {
         coefficent.frequencyCoefficents[i] = queue->pop();
         Logger(Logger::L_WRN, "Custom coefficent value " 
@@ -377,8 +383,13 @@ AudioRay *resolve_collision(AudioRay *ray, const CollisionInfo &info
 {
   Vec2 posA = ray->get_posA();
   Vec2 posB = ray->get_posB();
-  CArray<Vec2> amp = ray->add_amps(info.parent->get_absortion_coefficent());
+  CArray<Vec2> amp = ray->get_amp();
 
+  // Override amp with new added barrier amp if parent is a barrier
+  // NOTE: This currently can only be a barrier as sources are ignored in
+  // detection and listeners are handled before resolution seperatly
+  amp = ray->add_amps(info.parent->get_absortion_coefficent());
+  
   Vec2 incidentVec = posB - posA;
 
   // Transform the incident Vec into physical space based on scene size
@@ -586,8 +597,6 @@ vector<vector<AudioRay *>> generate_audio_rays_from_scene(
     if(collisionInfo.parent && _rayVec.back()->get_amp_average() > 0.f
         && collisionInfo.parent->get_type_name() == "Listener")
     {
-
-      Logger(Logger::L_ERR, "PUSHING BACK VEC AMP");
       returnVec.push_back(_rayVec);
     }
     else 

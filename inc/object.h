@@ -56,6 +56,4 @@ class Object
     sf::RectangleShape drawBox;
 
     std::string typeName;
-
-  private:
 };
