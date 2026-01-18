@@ -226,7 +226,7 @@ is located within the room and what acoustic properties it holds
 ```
 Barrier
 {
-  String = Cloth
+  String = Wood 
   Position
   {
     Vec2 = 200, 250

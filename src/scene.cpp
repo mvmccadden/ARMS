@@ -11,7 +11,9 @@
 
 #include <SFML/System/Sleep.hpp>
 #include <cmath>
+#include <numeric>
 #include <random>
+#include <system_error>
 
 #include "audioray.h"
 #include "barrier.h"
@@ -25,6 +27,53 @@
 #include "generator.h"
 
 using namespace std;
+
+/*!
+ *  Generate a given number of coprime values
+ *
+ *  \param value
+ *    The base value
+ *  \param numOfValues
+ *    The number of coprimes to generate
+ *
+ *  \returns
+ *    A CArray of uint16_t with numOfValues coprimes including the original
+ *    value as index 0
+ */
+CArray<uint16_t> generate_nearest_coprimes(const uint16_t &value, const uint8_t &numOfValues)
+{
+  CArray<uint16_t> returnArray;
+
+  if(numOfValues == 0)
+  {
+    static_cast<void>(Logger(Logger::L_ERR
+          , "Too few values request from generate_nearest_coprimes"));
+    return returnArray;
+  }
+
+  returnArray.resize(numOfValues);
+  returnArray[0] = value;
+
+  uint16_t posValue = value;
+  uint16_t negValue = value;
+  for(uint16_t i = 1; i < numOfValues; ++i)
+  {
+    uint16_t gcd = 0;
+    bool positive = numOfValues % 2;
+    // Keep adding or subtracing 1 till we reach a coprime and then add it to
+    // the coprime array
+    while(gcd != 1)
+    {
+      gcd = std::gcd(value
+          , ((numOfValues) 
+            ? ++posValue 
+            : --negValue));
+    }
+    returnArray[i] = (numOfValues ? posValue : negValue);
+  }
+
+  return returnArray;
+}
 
 Scene::Scene(const Vec2 &topLeftPos, const Vec2 &size, const Vec2 &scalar)
   : relativePos(topLeftPos), relativeSize(size), relativeScalar(scalar) { }
@@ -192,21 +241,17 @@ void Scene::apply_t60_to_wave(WaveFile &wave)
     : relativeSize.y / 34300.f * wave.get_sampling_rate();
 
   CArray<float> output;
-  // Random number generator for getting other delays
-  random_device randomDevice;
-  default_random_engine randomEngine(randomDevice());
-  uniform_int_distribution<int> randomAdd(-20, 20);
-  // Generate delay lines and apply them to the output
   const size_t delayCount = 10;
+  CArray<uint16_t> delays = generate_nearest_coprimes(delayTime, delayCount);
   for(size_t i = 0; i < delayCount; ++i)
   {
     static_cast<void>(Logger(Logger::L_MSG, "T60 DelayTime " + to_string(i)
-          + ": " + to_string(delayTime)));
+          + ": " + to_string(delays[i])));
 
     CArray<float> input(wave.get_samples());
     
     size_t bandSize = bands.size();
-    Equalizer t60EQ(bandSize, currentSamplingRate, delayTime);
+    Equalizer t60EQ(bandSize, currentSamplingRate, delays[i]);
     for(size_t j = 0; j < bandSize; ++j)
     {
       t60EQ.add_coefficent(bands[j].x, bands[j].y / delayCount, j);
@@ -214,10 +259,6 @@ void Scene::apply_t60_to_wave(WaveFile &wave)
 
     t60EQ.apply_filter(input);
     output += input;
-
-    // Generate a new randomly generated delay to offset delays and make sound
-    // more natural
-    delayTime += randomAdd(randomEngine);
   }
 
   // Overwrite samples from output into wave object
