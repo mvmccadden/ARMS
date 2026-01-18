@@ -109,7 +109,7 @@ Material
 }
 ```
 
-### Source 
+### Source (Speaker)
 
 A *required* container that defines where the audio source will be located and
 how rays will disperse from it.
@@ -158,7 +158,7 @@ Source
 }
 ```
 
-### Listener 
+### Listener (Microphone)
 
 A *required* container that defines where the audio listener will be located and
 what type of polar pattern it will use.
