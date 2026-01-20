@@ -205,7 +205,7 @@ int main()
 
           if(outPath) free(outPath);
         }));
-  ui.push_back(new Button("Generate Sabine Output"
+  ui.push_back(new Button("Generate Schroeder Output"
       , {buttonContainerItemStart.x
         , buttonContainerItemStart.y 
           + 3 * buttonContainerYItemOffset + 2 * buttonContainerYSectionOffset}
