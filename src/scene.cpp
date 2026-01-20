@@ -175,7 +175,7 @@ void Scene::apply_filter_to_wave(WaveFile &wave)
  *
  *    We will use a mix of comb and lowpass filters to creat artifical
  *    reverberation. To avoid robotic sounding delay we will use Schroeder
- *    Reverb with 4 parallel delay lines with coprime delay lengths
+ *    Reverb with 10 (og: 4) parallel delay lines with coprime delay lengths
  *
  *    T60 is taken from the Sabine formula for RT_60 = (0.161 * V) / A
  *    V = room volume in m^3

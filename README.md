@@ -7,7 +7,7 @@ to demonstrate how rooms attenuate sound.
 
 - Wav file I/O
 - Physical ray modeled reverberance 
-- Sabine Formula modeled reverberance
+- Schroeder (Sabine Formula) modeled reverberance
 - Custom Scripting System
     - Source
         - Custom ray distribtion
